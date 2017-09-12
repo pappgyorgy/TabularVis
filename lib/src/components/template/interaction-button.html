@@ -1,0 +1,40 @@
+<style is="custom-style">
+    :host{
+        position: absolute;
+        right: 50px;
+        bottom: 50px;
+        display: flex;
+        flex-direction: column-reverse;
+        z-index: 2;
+    }
+
+    .fab-container{
+        margin-top: 5px;
+    }
+
+    /*:host:nth-child(2) > .miniButton{
+        transition: opacity 0.5s;
+    }
+
+    :host:nth-child(2) > .miniButton{
+        transition: opacity 0.5s;
+    }
+
+    :host:nth-child(2) > .miniButton{
+        transition: opacity 0.5s;
+    }
+
+    :host:nth-child(2) > .miniButton{
+        transition: opacity 0.5s;
+    }*/
+
+    .miniButton{
+        opacity: 0.0;
+        /*transition: opacity 0.5s;*/
+    }
+</style>
+
+<div *ngFor="let interaction of listOfInteractions; let i=index" class="horizontal layout center-justified fab-container">
+    <paper-fab icon="{{interaction.icon}}" (mouseenter)="showMenuButtons()" (click)="interaction.action($event)" *ngIf="i<1"></paper-fab>
+    <paper-fab class="miniButton" [ngStyle]="setStyle(i)" icon="{{interaction.icon}}" (click)="interaction.action($event)" mini *ngIf="i>0"></paper-fab>
+</div>

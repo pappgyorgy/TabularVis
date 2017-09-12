@@ -1,0 +1,13 @@
+
+\.idea/libraries/
+
+\.idea/
+
+\.packages
+
+\.pub
+
+\web/components/node_modules
+
+\build
+pubspec\.lock

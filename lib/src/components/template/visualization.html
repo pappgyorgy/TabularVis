@@ -1,0 +1,32 @@
+<style is="custom-style">
+    #canvas_cont{
+        overflow: hidden;
+    }
+
+    .selected-sidebar-selector-icons{
+        color: #03a9f4;
+    }
+
+</style>
+
+<paper-drawer-panel id="sideDrawer" disable-swipe="true" disable-edge-swipe="true" drawer-width="80px" >
+    <div drawer id="sidebar" class="fit center-justified horizontal layout sidebar">
+        <div class="vertical layout" id="table_interaction_button_container">
+            <paper-icon-button class="sidebar-selector-icons" id="basic" icon="image:photo" (click)="openSettings($event)"></paper-icon-button>
+            <paper-icon-button class="sidebar-selector-icons" id="bezier" icon="image:tune" (click)="openSettings($event)"></paper-icon-button>
+            <paper-icon-button class="sidebar-selector-icons" id="sorting" icon="sort" (click)="openSettings($event)"></paper-icon-button>
+            <paper-icon-button class="sidebar-selector-icons" id="style" icon="image:brush" (click)="openSettings($event)"></paper-icon-button>
+            <paper-icon-button class="sidebar-selector-icons" icon="file-download" (click)="downloadImage()"></paper-icon-button>
+        </div>
+    </div>
+    <div main>
+        <paper-drawer-panel id="sideSideDrawer" disable-swipe="true" disable-edge-swipe="true" drawer-width="300px" responsive-width="999999px" (narrow-changed)="resizeCanvas($event)">
+            <div drawer id="sidebar3" class="sidebar">
+                <diagram-settings (lockSideBar)="lockSidebar($event)" id="diag-sett2" [connection]=""></diagram-settings>
+            </div>
+            <div main>
+                <div id="canvas_cont" class="content fit" (mousewheel)="mouseWheel($event)" (mouseup)="mouseUp($event)" (mousedown)="mouseDown($event)" (mousemove)="mouseOver($event)"></div>
+            </div>
+        </paper-drawer-panel>
+    </div>
+</paper-drawer-panel>

@@ -1,0 +1,55 @@
+name: bezier_simple_connect_viewer
+description: Data visualization web application
+dependencies:
+  angular2: "^3.1.0"
+  angular_components: "^0.5.2"
+  polymer_interop:
+  polymer:
+  polymer_elements:
+    path: ../polymer_elements-hosted/
+  isolate:
+  vector_math: '1.4.7'
+  dartson:
+  js:
+  logging: "^0.11.3+1"
+  three:
+      git: https://github.com/threeDart/three.dart.git
+  pnltrid:
+      git: https://bitbucket.org/papp_gyorgy93/polygon-near-linear-triangulation-in-dart.git
+  test:
+  benchmark_harness: "^1.0.4"
+  color_picker: "^1.1.4"
+  spreadsheet_decoder: "^0.3.2"
+
+dev_dependencies:
+  browser: ^0.10.0
+  dart_to_js_script_rewriter: ^1.0.1
+
+dependency_overrides:
+ polymer:
+  hosted:
+   name: polymer
+   url: "http://pub.dart-polymer.com"
+  version: "1.0.0-rc.19.unofficial.1"
+ polymer_interop:
+  hosted:
+   name: polymer_interop
+   url: "http://pub.dart-polymer.com"
+   version: "1.0.0-rc.11.exp.20170322.0"
+
+transformers:
+- polymer:
+    entry_points: web/index.html
+- angular2:
+    $exclude: ['web/components/**']
+    platform_directives:
+      - 'package:angular2/common.dart#COMMON_DIRECTIVES'
+    platform_pipes:
+      - 'package:angular2/common.dart#COMMON_PIPES'
+    entry_points: web/index.dart
+- $dart2js:
+    $include: '**/*.bootstrap.initialize.dart'
+    minify: true
+    commandLineOptions:
+    - --trust-type-annotations
+    - --trust-primitives

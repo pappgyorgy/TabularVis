@@ -1,0 +1,290 @@
+<style  is="custom-style">
+
+    :root{
+        --primary-color: #0E1F2B;
+        --dark-theme-text-color: white;
+        --primary-text-color: white;
+    }
+
+    #table_container{
+        overflow: hidden;
+    }
+
+    #grid{
+        height: 100%;
+    }
+
+    #table-placeholder{
+        position: relative;
+        height: 100%;
+    }
+
+    #table_container{
+        height: 100%;
+    }
+
+    #table-editor-placeholder{
+        right: 20px;
+        position: absolute;
+        width: 711px;
+        height: 55px;
+        border-radius: 3px;
+        top: -64px;
+        -webkit-transition: top 1s; /* Safari */
+        transition: top 1s;
+        z-index: 5;
+        background-color: var(--primary-color);
+    }
+
+    #table-editor-button-container{
+        margin-top: 5px;
+    }
+
+    .button-container-line{
+        height: 60px;
+    }
+
+    .editor-button-container{
+        margin-top: 5px;
+        margin-right: 10px;
+    }
+
+    .editor-button-container > paper-button > iron-icon{
+        margin-right: 3px;
+    }
+
+    .table-editor-button{
+        height: 48px;
+        color: white;
+        margin-left: 12px;
+    }
+
+    .close{
+        color: white;
+        /* top: -2px; */
+        float: right;
+        /* right: -174px; */
+        position: relative;
+        padding: 0;
+        height: 24px;
+        width: 24px;
+        border-radius: 3px;
+    }
+
+    .editor-input{
+        width: 41px;
+        text-align: center;
+        margin-top: -22px;
+    }
+
+    #label_color_editor{
+        float: left;
+    }
+
+    .not-visible{
+        position: absolute;
+        top: 0;
+        left: 0;
+        visibility: hidden;
+    }
+
+    paper-icon-button{
+        color: white;
+    }
+
+    hr{
+        width: 130%;
+        display: block;
+        height: 2px;
+        border: 0;
+        left: -15%;
+        position: relative;
+        border-top: 2px solid #03a9f4;
+    }
+
+    #table_interaction_button_container{
+        padding-top: 5px;
+        min-height: 600px;
+    }
+
+    .icon-group-text{
+        text-align: center;
+        color: white;
+    }
+
+    #handle_table{
+        background-color:  #0E1F2B;
+        color: white;
+
+        margin: 0;
+    }
+
+    #drop_zone{
+        color: white;
+        background-color: rgba(255,255,255,0.2);
+        border: 2px dashed white;
+        /* border-radius: 5px; */
+        position: relative;
+        display: block;
+        height: 190px;
+        box-shadow: 0px 0px 0px 5px rgba(255,255,255,0.2);
+        margin: 5px 5px;
+        line-height: 190px;
+        text-align: center;
+    }
+
+    #drop_zone > span{
+        display: inline-block;
+        vertical-align: middle;
+        font-family: 'Roboto', 'Noto', sans-serif;
+        -webkit-font-smoothing: antialiased;
+        line-height: normal;
+        text-transform: uppercase;
+    }
+
+
+    .inner-height{
+        height: 230px;
+    }
+
+    #upload_container{
+        height: 100%;
+    }
+
+    .dialog-container{
+        position: relative;
+        margin: 5px;
+    }
+
+    #dialog-main{
+        height: 70%;
+    }
+
+    #drop_zone_container{
+        height: 100%;
+    }
+
+    #dialog_container{
+        min-width: 550px;
+        margin: 0;
+        padding: 10px;
+    }
+
+    #close_dialog{
+        float: right;
+    }
+
+    .text-center{
+        text-align: center;
+    }
+
+    .full-width{
+        width: 100%;
+    }
+
+    #centered_text{
+        text-align: center;
+        width: 100%;
+        height: 10%;
+        padding: 5px 0;
+    }
+
+    #min_value_input{
+        margin: 0 5px 0 0;
+    }
+
+    #max_value_input{
+        margin: 0 0 0 5px;
+    }
+
+    .inputfile {
+        width: 0.1px;
+        height: 0.1px;
+        opacity: 0;
+        overflow: hidden;
+        position: absolute;
+        z-index: -1;
+    }
+
+    .inputfile + label > paper-button {
+        width: 100%;
+    }
+
+</style>
+
+<!--<link rel="import" href="./components/iron-pages/iron-pages.html">!-->
+<paper-drawer-panel id="sideDrawer2" disable-swipe="true" disable-edge-swipe="true" drawer-width="80px">
+    <div drawer id="sidebar2" class="fit center-justified horizontal layout sidebar">
+        <div class="vertical layout" id="table_interaction_button_container">
+                <paper-icon-button icon="check" (click)="visualizeTable()"></paper-icon-button>
+                <paper-icon-button icon="file-download" (click)="downloadTable()"></paper-icon-button>
+                <paper-icon-button src="images/icons/table-edit_48.png" (click)="handleTables()"></paper-icon-button>
+                <paper-icon-button src="images/icons/table-row-plus-before_48.png" (click)="insertRow()"></paper-icon-button>
+                <paper-icon-button src="images/icons/table-column-plus-before_48.png" (click)="insertCol()"></paper-icon-button>
+                <paper-icon-button src="images/icons/table-row-remove_48.png" (click)="removeRow()"></paper-icon-button>
+                <paper-icon-button src="images/icons/table-column-remove_48.png" (click)="removeCol()"></paper-icon-button>
+                <paper-icon-button icon="av:shuffle" (click)="setRandomValues()"></paper-icon-button>
+                <paper-icon-button icon="delete-forever" (click)="clearTableValues()"></paper-icon-button>
+            <section *ngIf="showBlockSettings">
+                <hr/>
+                    <div class="icon-group-text">Color</div>
+                        <paper-icon-button id="label_color_editor" icon="editor:format-color-fill"></paper-icon-button>
+                    <div class="icon-group-text">Group</div>
+                    <div class="icon-group-text">No.</div>
+                        <paper-input id="group_number_setter" [(value)]="groupNumber" (change)="changeLabelGroup($event)" class="editor-input" type="number" auto-validate allowed-pattern="[0-9]" min="1"></paper-input>
+            </section>
+        </div>
+    </div>
+    <div main>
+        <div id="table-editor-container" class="content fit">
+            <div id="table-placeholder">
+                <div id="table_container"></div>
+            </div>
+        </div>
+    </div>
+</paper-drawer-panel>
+
+<paper-dialog id="handle_table" modal>
+    <div id="dialog_container" class="vertical layout">
+        <div class="paper-dialog-buttons flex">
+            <paper-icon-button class="close" icon="close" dialog-confirm></paper-icon-button>
+        </div>
+        <div id="dialog-main" class="horizontal layout flex 4">
+            <div id="upload_container" class="flex dialog-container">
+                <div id="drop_zone_container" class="vertical layout">
+                    <div class="inner-height">
+                        <div class="flex" id="drop_zone"><span>Drag file here</span></div>
+                        <div id="centered_text">Or</div>
+                    </div>
+                    <input id="file" type="file" class="inputfile">
+                    <label for="file"><paper-button raised class="flex">Choose one</paper-button></label>
+                    <!--<paper-button raised class="flex" (click)="chooseFileForUpload($event)">Choose one</paper-button>!-->
+                </div>
+            </div>
+            <div id="create_new_table" class="flex dialog-container">
+                <div class="vertical layout">
+                    <div class="inner-height">
+                        <paper-input label="Number of rows" id="width" [(value)]="tableRow" type="number" auto-validate allowed-pattern="[0-9]" min="2"></paper-input>
+                        <paper-input label="Number of columns" id="height" [(value)]="tableCol" type="number" auto-validate allowed-pattern="[0-9]" min="2"></paper-input>
+                        <div class="horizontal layout">
+                            <span class="flex text-before-toggle-button">Random numbers</span><paper-toggle-button (change)="useRandomNumbers($event)"></paper-toggle-button>
+                        </div>
+                        <div class="horizontal layout">
+                            <span class="flex text-before-toggle-button">Random zeroes</span><paper-toggle-button id="random_zeroes" checked disabled (change)="useRandomZeroes($event)"></paper-toggle-button>
+                        </div>
+                        <div class="horizontal layout">
+                            <div id="min_value_input" class="vertical layout">
+                                <paper-input disabled label="Minimum value" id="min_value" [(value)]="minRandomValue" type="number" auto-validate allowed-pattern="[0-9]" min="0"></paper-input>
+                            </div>
+                            <div id="max_value_input" class="vertical layout">
+                                <paper-input disabled label="Maximum value" id="max_value" [(value)]="maxRandomValue" type="number" auto-validate allowed-pattern="[0-9]" min="0"></paper-input>
+                            </div>
+                        </div>
+                    </div>
+                    <paper-button raised class="flex" (click)="createNewTable($event)">Create new table</paper-button>
+                </div>
+            </div>
+        </div>
+    </div>
+</paper-dialog>
+

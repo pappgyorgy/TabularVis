@@ -1,0 +1,298 @@
+<style  is="custom-style" include="iron-flex iron-flex-alignment">
+    .settings-paper-card{
+        width: 95%;
+        margin: 7.5px 0px 7.5px 2.5%;
+        position: relative;
+    }
+
+    paper-slider::shadow > paper-input{
+        width: 100px;
+    }
+    :host{
+        height: 100%;
+    }
+    paper-scroll-header-panel{
+        position: static;
+        height: 100%;
+    }
+
+    .title{
+        margin: 10px 0px 0px 15px;
+    }
+
+    paper-button{
+        text-align: left;
+        -webkit-justify-content: flex-start;
+        justify-content: flex-start;
+        height: 48px;
+        color: white;
+        margin-left: 12px;
+    }
+
+    .button-icon{
+        margin-right: 20px;
+    }
+
+    .card-content{
+        -webkit-justify-content: center;
+        justify-content: center;
+    }
+
+    #settings_selector{
+        color: white;
+    }
+
+    .bezier-param{
+        width: 100%;
+    }
+
+    #sorting_algorithms{
+        width: 100%;
+    }
+
+    .half{
+        width: 45%;
+    }
+
+    .full{
+        width: 100%;
+    }
+
+    .center-justify{
+        justify-content: center;
+    }
+
+    .position-container{
+        padding-top: 8px;
+        overflow: auto;
+    }
+
+    .back-button{
+        height: 48px;
+        justify-content: left;
+    }
+
+    .conn-color-button{
+        height: 150px;
+    }
+
+    .iron-pages-selector{
+        height: calc(100% - 37px);
+    }
+
+    #connections_settings{
+        height: 100%;
+    }
+
+    #color_picker_container{
+        background-color: #0E1F2B;
+    }
+
+    #sidebar_locker{
+        margin: 10px 0 5px 2.5%;
+    }
+
+    .text-before-toggle-button{
+        font-family: 'Roboto', 'Noto', sans-serif;
+        -webkit-font-smoothing: antialiased;
+    }
+
+    #color_picker_container input{
+        width: 30px;
+    }
+
+    .color-picker{
+        padding: 0;
+        width: 340px;
+    }
+
+    #color_picker_container{
+        left: 80px;
+    }
+
+</style>
+
+<div id="sidebar_locker">
+    <div class="horizontal layout">
+        <span class="flex text-before-toggle-button">Lock sidebar</span><paper-toggle-button (change)="lockDiagramSettingsSidebar($event)"></paper-toggle-button>
+    </div>
+</div>
+<iron-pages id="settings_selector" class="content iron-pages-selector" selected="{{selectedSettingPage}}">
+    <div id="diagram_settings" class="vertical layout">
+        <!--<div class="settings-paper-card">
+            <div>Connections thickness:</div>
+            <div class="card-content">
+                <paper-radio-group selected="a" (change)="radioButtonChanged($event)">
+                    <paper-radio-button name="a">Different</paper-radio-button>
+                    <paper-radio-button name="b">Unified</paper-radio-button>
+                </paper-radio-group>
+            </div>
+        </div>!-->
+        <div class="settings-paper-card">
+            <div class="card-content">
+                <div class="horizontal layout">
+                    <span class="flex text-before-toggle-button">Unified connection thickness</span><paper-toggle-button (change)="connectionThicknessChanged($event)"></paper-toggle-button>
+                </div>
+
+                <div class="horizontal layout">
+                    <span class="flex text-before-toggle-button">Random segment color</span><paper-toggle-button (change)="changeSegmentColorPool($event)"></paper-toggle-button>
+                </div>
+                <div class="horizontal layout">
+                    <span class="flex text-before-toggle-button">Show ticks</span><paper-toggle-button (change)="showDiagramTicks($event)"></paper-toggle-button>
+                </div>
+                <div class="horizontal layout">
+                    <span class="flex text-before-toggle-button">Use color transition for values</span><paper-toggle-button (change)="enableValueColorRepresentation($event)"></paper-toggle-button>
+                </div>
+                <div class="center horizontal layout">
+                    <paper-button id="minColor" (click)="openBy($event)" style="text-transform: none; width: 100%; margin: 0; padding-left: 0; padding-right: 0">
+                        <div style="margin-right: auto; margin-left: auto">
+                            <iron-icon style="margin-right: 10px" class="button-icon" icon="editor:format-color-fill"></iron-icon><span>smallest</span>
+                        </div>
+                    </paper-button>
+                    <paper-button id="maxColor" (click)="openBy($event)" style="text-transform: none; width: 100%; margin: 0; padding-left: 0; padding-right: 0;">
+                        <div style="margin-right: auto; margin-left: auto">
+                            <iron-icon style="margin-right: 10px" class="button-icon" icon="editor:format-color-fill"></iron-icon><span>largest</span>
+                        </div>
+                    </paper-button>
+                </div>
+                <div class="horizontal layout">
+                    <span class="flex text-before-toggle-button">Use unified for the connections</span><paper-toggle-button (change)="setAllConnectionColor($event)"></paper-toggle-button>
+                </div>
+                <div class="horizontal layout">
+                    <paper-button id="unifiedColor" (click)="openBy($event)" style="text-transform: none; width: 100%; margin: 0; padding-left: 0; padding-right: 0;">
+                        <div style="margin-right: auto; margin-left: auto">
+                            <iron-icon style="margin-right: 10px" class="button-icon" icon="editor:format-color-fill"></iron-icon><span>choose color</span>
+                        </div>
+                    </paper-button>
+                </div>
+                <div>
+                    <div class="text-before-toggle-button">Connections direction</div>
+                    <paper-radio-group selected="{{connectionsDirection}}" (change)="connectionsDirectionChange($event)">
+                        <paper-radio-button name="row">Row</paper-radio-button>
+                        <paper-radio-button name="col">Column</paper-radio-button>
+                        <paper-radio-button name="none">None</paper-radio-button>
+                    </paper-radio-group>
+                </div>
+                <!--<paper-button style="text-transform: none; margin: auto; padding-left: 0; padding-right: 0">
+                    <div style="width: 100%" class="center vertical layout">
+                        <div>smallest</div>
+                        <iron-icon style="margin-left: auto; margin-right: auto" class="button-icon" icon="editor:format-color-fill"></iron-icon>
+                    </div>
+                </paper-button>
+                <paper-button style="text-transform: none; margin: auto; padding-left: 0; padding-right: 0">
+                    <div style="width: 100%" class="center vertical layout">
+                        <div>largest</div>
+                        <iron-icon style="margin-left: auto; margin-right: auto" class="button-icon" icon="editor:format-color-fill"></iron-icon>
+                    </div>
+                </paper-button>!-->
+            </div>
+        </div>
+        <div class="settings-paper-card">
+            <div>Blocks' distance from connections:</div>
+            <paper-slider pin snaps class="bezier-param" min="0" max="150" value="{{spaceConnAndBlocks.value}}" (immediate-value-change)="spaceConnAndBlocks.immValueChange($event)" (change)="spaceConnAndBlocks.valueChange($event)" pin snaps step="1" ></paper-slider>
+            <div>Space between groups:</div>
+            <paper-slider pin snaps class="bezier-param" min="0.0" max="10.0" value="{{blockDistance.value}}" (immediate-value-change)="blockDistance.immValueChange($event)" (change)="blockDistance.valueChange($event)" pin snaps step="0.05" ></paper-slider>
+            <div>Lines' width:</div>
+            <paper-slider pin snaps class="bezier-param" min="0.0" max="1.0" value="{{lineWidth.value}}" (immediate-value-change)="lineWidth.immValueChange($event)" (change)="lineWidth.valueChange($event)" pin snaps step="0.05" ></paper-slider>
+        </div>
+    </div>
+    <div id="bezier_curve" class="vertical layout">
+        <div class="settings-paper-card">
+            <!--<div>Control points:</div>
+            <div class="card-content">
+                <div>2nd and 4th</div>
+                <paper-slider class="bezier-param" editable min="0.0" max="2.0" value="{{crest.valueDouble}}" step="0.05" (immediate-value-change)="crest.immValueChange($event)" (change)="crest.valueChange($event)"></paper-slider>
+                <div>3rd</div>
+                <paper-slider class="bezier-param" editable min="0.0" max="2.0" value="{{bezier_radius.valueDouble}}" step="0.05" (immediate-value-change)="bezier_radius.immValueChange($event)" (change)="bezier_radius.valueChange($event)"></paper-slider>
+                <div>Adjust 3rd</div>
+                <paper-slider class="bezier-param" editable min="-2.0" max="2.0" value="{{bezier_radius_purity.valueDouble}}" step="0.05" (immediate-value-change)="bezier_radius_purity.immValueChange($event)" (change)="bezier_radius_purity.valueChange($event)"></paper-slider>
+            </div>!-->
+            <bezier-curve-settings></bezier-curve-settings>
+        </div>
+    </div>
+    <div id="sorting_settings" class="vertical layout">
+        <div class="settings-paper-card">
+            <div class="card-content">
+                <div>
+                    <paper-toggle-button checked (change)="enableSortConnection($event)">Automatically sorting</paper-toggle-button>
+                </div>
+                <paper-radio-group selected="{{selectedAlgorithm}}" (change)="changeSortAlgorithm($event)" class="vertical layout">
+                    <paper-radio-button name="0">Hill climbing</paper-radio-button>
+                    <paper-radio-button name="1">Min Conflict</paper-radio-button>
+                    <paper-radio-button name="2">Cross entropy</paper-radio-button>
+                    <paper-radio-button name="3">Cross entropy min conflict</paper-radio-button>
+                    <paper-radio-button name="4">Cross entropy mod</paper-radio-button>
+                    <paper-radio-button name="5">Simulated annealing</paper-radio-button>
+                    <paper-radio-button name="6">Bees algorithm</paper-radio-button>
+                </paper-radio-group>
+
+                <!--<div>
+                    <paper-dropdown-menu id="sorting_algorithms" label="Select sorting algorithm">
+                        <paper-listbox class="dropdown-content" [(selected)]="selectedAlgorithm" (iron-select)="changeSortAlgorithm($event)">
+                            <paper-item>Hill climbing</paper-item>
+                            <paper-item>Min Conflict</paper-item>
+                            <paper-item>Cross entropy</paper-item>
+                            <paper-item>Cross entropy min conflict</paper-item>
+                            <paper-item>Cross entropy mod</paper-item>
+                            <paper-item>Simulated annealing</paper-item>
+                            <paper-item>Bees algorithm</paper-item>
+                        </paper-listbox>
+                    </paper-dropdown-menu>
+                </div>!-->
+            </div>
+        </div>
+    </div>
+    <div id="connections_settings" class="vertical layout">
+        <div [ngSwitch]="isSelectedVis" class="settings-paper-card flex">
+            <template ngSwitchCase="connSettings">
+                <div class="vertical layout fit">
+                    <div class="conn-color-button">
+                        <div class="vertical layout">
+                            <paper-button id="segOne" (click)="openBy($event)" style="text-transform: none; width: 100%; margin: 0; padding-left: 0; padding-right: 0;">
+                                <div style="width: 100%;" class="horizontal layout">
+                                    <span class="flex">{{segmentOneParent.name}}</span><iron-icon class="button-icon" icon="editor:format-color-fill"></iron-icon>
+                                </div>
+                            </paper-button>
+                            <paper-button id="segTwo" (click)="openBy($event)" style="text-transform: none; width: 100%; margin: 0; padding-left: 0; padding-right: 0;">
+                                <div style="width: 100%;" class="horizontal layout">
+                                    <span class="flex">{{segmentTwoParent.name}}</span><iron-icon class="button-icon" icon="editor:format-color-fill"></iron-icon>
+                                </div>
+                            </paper-button>
+                            <paper-button id="connectionColor" (click)="openBy($event)" style="text-transform: none; width: 100%; margin: 0; padding-left: 0; padding-right: 0;">
+                                <div style="width: 100%;" class="horizontal layout">
+                                    <span class="flex">Connection</span><iron-icon class="button-icon" icon="editor:format-color-fill"></iron-icon>
+                                </div>
+                            </paper-button>
+                        </div>
+                    </div>
+                    <div class="position-container flex">
+                        <div>Connection's begin position in {{segmentOneParent.name}}:</div>
+                        <paper-slider pin snaps class="bezier-param" min="1" max="{{barInSegmentOneSlider.maxValue}}" max-markers="10" value="{{barInSegmentOneSlider.value}}" (immediate-value-change)="barInSegmentOneSlider.immValueChange($event)" (change)="barInSegmentOneSlider.valueChange($event)" pin snaps step="1" ></paper-slider>
+                        <div>Connection's end position in {{segmentTwoParent.name}}:</div>
+                        <paper-slider pin snaps class="bezier-param" min="1" max="{{barInSegmentTwoSlider.maxValue}}" max-markers="10" value="{{barInSegmentTwoSlider.value}}" (immediate-value-change)="barInSegmentTwoSlider.immValueChange($event)" (change)="barInSegmentTwoSlider.valueChange($event)" pin snaps step="1" ></paper-slider>
+                        <div>Segment {{segmentOneParent.name}} position:</div>
+                        <paper-slider id="segmentOnePosSlider" pin snaps class="bezier-param" min="1" max="{{segmentOneSlider.maxValue}}" max-markers="10" value="{{segmentOneSlider.value}}" (immediate-value-change)="segmentOneSlider.immValueChange($event)" (change)="segmentOneSlider.valueChange($event)" pin snaps step="1" ></paper-slider>
+                        <div>Segment {{segmentTwoParent.name}} position:</div>
+                        <paper-slider id="segmentTwoPosSlider" pin snaps class="bezier-param" min="1" max="{{segmentTwoSlider.maxValue}}" max-markers="10" value="{{segmentTwoSlider.value}}" (immediate-value-change)="segmentTwoSlider.immValueChange($event)" (change)="segmentTwoSlider.valueChange($event)" pin snaps step="1" ></paper-slider>
+                        <div>Group {{segmentOneParent.groupNumber}} position:</div>
+                        <paper-slider pin snaps class="bezier-param" min="1" max="{{groupOneSlider.maxValue}}" max-markers="10" value="{{groupOneSlider.value}}" (immediate-value-change)="groupOneSlider.immValueChange($event)" (change)="groupOneSlider.valueChange($event)" pin snaps step="1" ></paper-slider>
+                        <div>Group {{segmentTwoParent.groupNumber}} position:</div>
+                        <paper-slider pin snaps class="bezier-param" min="1" max="{{groupTwoSlider.maxValue}}" max-markers="10" value="{{groupTwoSlider.value}}" (immediate-value-change)="groupTwoSlider.immValueChange($event)" (change)="groupTwoSlider.valueChange($event)" pin snaps step="1" ></paper-slider>
+                    </div>
+                </div>
+            </template>
+            <template ngSwitchCase="fallBack">
+                <div>Select a connection before you change its settings</div>
+            </template>
+            <template ngSwitchDefault>
+                <div>An error occured, refresh the page</div>
+            </template>
+        </div>
+    </div>
+</iron-pages>
+<paper-dialog id="color_picker_container" no-overlap horizontal-align="left" vertical-align="top" elevation="4">
+    <div class="buttons">
+        <paper-button (click)="applySelectedColor($event)">Apply</paper-button>
+        <paper-button (click)="setSelectedColor($event)">Select</paper-button>
+    </div>
+</paper-dialog>

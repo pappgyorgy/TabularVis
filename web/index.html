@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title></title>
+
+    <!-- For development !-->
+    <base href="/">
+
+    <!-- To work with browsers which are not supporting the web components !-->
+    <script src="packages/web_components/webcomponents.min.js"></script>
+    <script src="packages/web_components/dart_support.js"></script>
+    <!--<script src="../lib/src/components/template/polymer/bower_components/webcomponentsjs/webcomponents-lite.min.js"></script>!-->
+    <!--<script src="./packages/web_components/webcomponents.min.js"></script>!-->
+
+    <!--<link rel="import" href="../lib/src/components/template/polymer/bower_components/polymer/polymer.html">!-->
+    <!--<link rel="import" href="../lib/src/components/template/polymer/bower_components/iron-flex-layout/iron-flex-layout-classes.html">!-->
+
+    <script src="./components/node_modules/handsontable/dist/handsontable.full.js"></script>
+    <link rel="stylesheet" type="text/css" href="./components/node_modules/handsontable/dist/handsontable.full.css">
+    <script src="./js/data_table.js"></script>
+    <script src="./js/pnltri.js"></script>
+
+    <!-- Google Material Icon !-->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
+    <script>
+        window.Polymer = window.Polymer || {};
+        window.Polymer.dom = 'shadow';
+    </script>
+
+    <script type="application/dart" src="index.dart"></script>
+    <!--<script defer src="../build/web/packages/browser/dart.js"></script>!-->
+    <script defer src="./packages/browser/dart.js"></script>
+
+    <title>TabularViewer</title>
+
+</head>
+<style is="custom-style">
+
+    :root{
+        --primary-color: #0E1F2B;
+        --dark-theme-text-color: white;
+        --primary-text-color: white;
+    }
+
+    /*:root {
+        --dark-primary-color: #303F9F;
+        --default-primary-color: #3F51B5;
+        --light-primary-color: #C5CAE9;
+        --text-primary-color: #FFFFFF;
+        --accent-color: #03A9F4;
+        --primary-background-color: #C5CAE9;
+        --primary-text-color: #212121;
+        --secondary-text-color: #757575;
+        --disabled-text-color: #BDBDBD;
+        --divider-color: #BDBDBD;
+
+
+
+
+        --drawer-menu-color: #ffffff;
+        --drawer-border-color: 1px solid #ccc;
+        --drawer-toolbar-border-color: 1px solid rgba(0, 0, 0, 0.22);
+
+
+        --paper-menu-background-color: #fff;
+        --menu-link-color: #111111;
+
+
+        --paper-input-container-color: rgba(255, 255, 255, 0.64);
+        --paper-input-container-focus-color: rgba(255, 255, 255, 1);
+        --paper-input-container-input-color: #fff;
+    }*/
+
+
+    .paper-dialog-buttons{
+        color: white;
+    }
+
+
+    .line {
+        display: inline-block;
+        width: 25px;
+        height: 25px;
+        border-radius: 25px;
+        background-color: var(--dark-theme-text-color);
+    }
+
+    body{
+        background-color: var(--primary-color);
+    }
+
+    /*#drawer::shadow iron-selector #main > #scrim{
+        background: transparent;
+    }*/
+
+    paper-drawer-panel{
+        --paper-drawer-panel-scrim:{
+            display: none;
+        };
+        --paper-drawer-panel-drawer-container:{
+            visibility: visible !important;
+            transition: transform ease-in-out 0.3s;
+        }
+    }
+
+    paper-icon-button.close:hover {
+        background-color: var(--paper-pink-500);
+        color: white;
+    }
+
+    paper-fab{
+        --paper-fab-background: var(--paper-light-blue-500);
+    }
+
+    paper-tabs{
+        --paper-tabs-selection-bar-color: var(--paper-light-blue-500);
+    }
+
+    paper-tab{
+        --paper-tab-ink: var(--paper-light-blue-500);
+    }
+
+    #navigation-button-container > paper-material > a > paper-item{
+        --paper-item-focused-before: {
+            background-color: #03a9f4;
+            border-radius: 1px;
+        }
+    }
+
+    paper-dropdown-menu{
+        --paper-dropdown-menu-input:{
+            --paper-input-container-color: white;
+            --paper-input-container-focus-color: #03a9f4;
+            --paper-input-container-input-color: white;
+        };
+
+        --paper-input-container-label-focus: {
+            color: #03a9f4;
+        };
+        --paper-input-container-label-floating: {
+            color: #03a9f4;
+        };
+        --paper-input-container-underline-focus:{
+            color: #03a9f4;
+        }
+
+    }
+
+    paper-listbox{
+        --paper-listbox-background-color: var(--primary-color);
+        --paper-listbox-color: white;
+    }
+
+    paper-radio-button{
+        --paper-radio-button-checked-color: #03a9f4;
+    }
+
+    paper-toggle-button{
+        --paper-toggle-button-checked-bar-color: #03a9f4;
+        --paper-toggle-button-checked-button-color: #03a9f4;
+        --paper-toggle-button-checked-ink-color: #03a9f4;
+        --paper-toggle-button-unchecked-bar-color: grey;
+    }
+
+    paper-slider{
+        --paper-slider-input: {
+            --paper-input-container-color: white;
+            --paper-input-container-focus-color: #03a9f4;
+            --paper-input-container-input-color: white;
+            width: 80px;
+        };
+        --paper-slider-active-color: #03a9f4;
+        --paper-slider-markers-color: #000;
+        --paper-slider-knob-color: #03a9f4;
+    }
+
+    paper-input{
+        --paper-input-container-color: white;
+        --paper-input-container-focus-color: #03a9f4;
+        --paper-input-container-input-color: white;
+    }
+
+    diagram-settings#diag-sett paper-slider{
+        width: 100%;
+        --paper-slider-input: {
+            width: 100px;
+        }
+    }
+
+    cj-grid#grid::shadow input {
+        width: 50px;
+    }
+
+    .loader {
+        /*border: 5px solid #0E1F2B;*/
+        border-radius: 50%;
+        border-top: 10px solid white;
+        border-right: 10px solid #03a9f4;
+        border-bottom: 10px solid white;
+        border-left: 10px solid #03a9f4;
+        width: 50px;
+        height: 50px;
+        /*-webkit-animation: spin 2s linear infinite;
+        animation: spin 2s linear infinite;*/
+        -webkit-animation: spin 2s infinite;
+        animation: spin 2s infinite;
+        margin: auto;
+    }
+
+    @-webkit-keyframes spin {
+        0% {
+            -webkit-transform: rotate(0deg) scale(1);
+        }
+        60% {
+            -webkit-transform: rotate(360deg) scale(1);
+        }
+        80%{
+            -webkit-transform: rotate(360deg) scale(1.1);
+        }
+        100% {
+            -webkit-transform: rotate(360deg) scale(1);
+        }
+    }
+
+    @keyframes spin {
+        0% {
+            transform: rotate(0deg) scale(1);
+        }
+        60% {
+            transform: rotate(360deg) scale(1);
+        }
+        80%{
+            transform: rotate(360deg) scale(1.1);
+        }
+        100% {
+            transform: rotate(360deg) scale(1);
+        }
+    }
+
+    .error-toast{
+        --paper-toast-background-color: red;
+        --paper-toast-color: white;
+    }
+
+    #color_picker_container canvas{
+        float: left;
+        margin: 5px;
+    }
+
+    #color_picker_container .color-picker-info-box{
+        float: left;
+        margin: 5px;
+    }
+
+    td{
+        background-color: #FBFAF4 !important;
+    }
+
+
+    .sidebar{
+        background-color: #0E1F2B;
+        box-shadow: 0 4px 5px 0 rgba(0, 0, 0, 0.14), 0 1px 10px 0 rgba(0, 0, 0, 0.12), 0 2px 4px -1px rgba(0, 0, 0, 0.4);
+        overflow-x: auto;
+        color: white;
+    }
+
+    ::-webkit-scrollbar {
+        width: 10px;
+    }
+
+    ::-webkit-scrollbar-track {
+        -webkit-box-shadow: inset 0 0 6px rgba(0,0,0,0.5);
+    }
+
+    ::-webkit-scrollbar-thumb {
+        -webkit-box-shadow: inset 0 0 6px rgb(0,0,0);
+        background-color: #03a9f4;
+    }
+
+</style>
+<body class="fullbleed" unresolved>
+    <my-app class="fit vertical layout" id="my-app">
+        <div class="fit horizontal layout center">
+            <div class="flex vertical layout center">
+                <div class="loader"></div>
+            </div>
+        </div>
+        </div>
+    </my-app>
+</body>
+</html>

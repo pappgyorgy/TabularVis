@@ -1,0 +1,42 @@
+<style  is="custom-style" include="iron-flex iron-flex-alignment">
+    .card-content{
+        -webkit-justify-content: center;
+        justify-content: center;
+    }
+
+    #bezier_canvas{
+        /*background-color: #FBFAF4;*/
+        padding-left: 0;
+        padding-right: 0;
+        margin-left: auto;
+        margin-right: auto;
+        display: block;
+    }
+
+    .smaller{
+        color: #aaa;
+        font-size: 13px;
+    }
+
+    .bezier-param{
+        width: 100%;
+    }
+
+</style>
+
+<div class="card-content">
+    <div>P1</div><div class="smaller">first control point's angular position</div>
+    <paper-slider class="bezier-param" editable min="0.0" max="6.28318530718" value="{{curveStart.valueDouble}}" step="0.05" (immediate-value-change)="curveStart.immValueChange($event)" (change)="curveStart.valueChange($event)"></paper-slider>
+    <div>P5</div><div class="smaller">last control point's angular position</div>
+    <paper-slider class="bezier-param" editable min="0.0" max="6.28318530718" value="{{curveEnd.valueDouble}}" step="0.05" (immediate-value-change)="curveEnd.immValueChange($event)" (change)="curveEnd.valueChange($event)"></paper-slider>
+    <div>P2 and P4</div><div class="smaller">distance from the end points of the curve</div>
+    <paper-slider class="bezier-param" editable min="0.0" max="2.0" value="{{crest.valueDouble}}" step="0.05" (immediate-value-change)="crest.immValueChange($event)" (change)="crest.valueChange($event)"></paper-slider>
+    <div>P3</div><div class="smaller">distance from O (center of the circle)</div>
+    <paper-slider class="bezier-param" editable min="0.0" max="2.0" value="{{bezier_radius.valueDouble}}" step="0.05" (immediate-value-change)="bezier_radius.immValueChange($event)" (change)="bezier_radius.valueChange($event)"></paper-slider>
+    <div>P3</div><div class="smaller">distance from M (midpoint of P1 and P5)</div>
+    <paper-slider class="bezier-param" editable min="-2.0" max="2.0" value="{{bezier_radius_purity.valueDouble}}" step="0.05" (immediate-value-change)="bezier_radius_purity.immValueChange($event)" (change)="bezier_radius_purity.valueChange($event)"></paper-slider>
+</div>
+<div>
+    <div class="flex text-before-toggle-button">Curve preview:</div>
+    <canvas id="bezier_canvas" width="280" height="280"></canvas>
+</div>
