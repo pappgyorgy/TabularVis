@@ -11,7 +11,7 @@ import 'package:three/extras/font_utils.dart' as FontUtils;
 import 'package:angular2/angular2.dart';
 import 'package:angular2/platform/browser.dart';
 
-import 'package:bezier_simple_connect_viewer/tabular_vis.dart';
+import 'package:tabular_vis/tabular_vis.dart';
 
 Future loadFonts() async{
 

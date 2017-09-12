@@ -4,7 +4,7 @@ import 'dart:math';
 import 'package:angular2/angular2.dart';
 import 'package:angular_components/angular_components.dart';
 
-import 'package:bezier_simple_connect_viewer/tabular_vis.dart';
+import '../../tabular_vis.dart';
 
 import 'paper_tab_selected_directive.dart';
 import 'paper_radio_roup_selected_directive.dart';

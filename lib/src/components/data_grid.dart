@@ -24,7 +24,7 @@ import 'package:polymer_elements/iron_pages.dart';
 import 'package:polymer_elements/paper_dialog.dart';
 import 'package:polymer_elements/paper_toggle_button.dart';
 
-import 'package:bezier_simple_connect_viewer/tabular_vis.dart';
+import '../../tabular_vis.dart';
 import 'interaction_button.dart';
 import 'handsontable_wrapper.dart';
 import 'app_component.dart';

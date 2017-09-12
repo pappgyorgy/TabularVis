@@ -45,7 +45,7 @@ import 'dart:async';
 import 'dart:html';
 
 //Injectables
-import 'package:bezier_simple_connect_viewer/src/application.dart';
+import '../application.dart';
 
 //Custom elements
 import 'interaction_button.dart';

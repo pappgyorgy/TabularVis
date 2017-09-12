@@ -12,7 +12,7 @@ import 'package:three/extras/font_utils.dart' as FontUtils;
 import 'package:three/extras/core/shape_utils.dart' as ShapeUtils;
 import 'package:three/extras/shaders/shaders.dart';
 import 'dart:math';
-import 'package:bezier_simple_connect_viewer/src/geometry/polygon_near_linear_triangulation.dart';
+import '../geometry/polygon_near_linear_triangulation.dart';
 import 'package:angular2/core.dart';
 import '../app_logger.dart';
 

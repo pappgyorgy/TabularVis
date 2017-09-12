@@ -3,7 +3,7 @@ import 'dart:core';
 import 'dart:async';
 import 'package:angular2/core.dart';
 
-import 'package:bezier_simple_connect_viewer/tabular_vis.dart';
+import '../../tabular_vis.dart';
 import 'package:polymer_elements/paper_drawer_panel.dart';
 import 'package:polymer_elements/paper_fab.dart';
 import 'package:polymer_elements/paper_icon_button.dart';
