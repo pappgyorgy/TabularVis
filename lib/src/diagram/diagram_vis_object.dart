@@ -1,58 +1,58 @@
 part of diagram;
 
-@Entity()
+
 class DiagramVisObject{
 
-  @Property()
+  
   List<double> shapeRawData;
 
-  @Property()
+  
   List<double> lineRawData;
 
-  @Property()
+  
   List<double> color;
 
-  @Property()
+  
   bool isOutlined = true;
 
-  @Property()
+  
   bool isTransparent = true;
 
-  @Property()
+  
   double opacity = 0.8;
 
-  @Property()
+  
   int randomSeedHelper = 0;
 
-  @Property()
+  
   String diagramID;
 
-  @Property()
+  
   String shapeID;
 
-  @Property()
+  
   String newShapeID;
 
-  @Property()
+  
   String label = "";
 
-  @Property()
+  
   List<double> labelMatrix;
 
-  @Property()
+  
   int numberOfShapePoint;
 
-  @Property()
+  
   int numberOfLinePoint;
 
-  @Property()
+  
   bool isThin = false;
 
   /// type of visObject
   /// 0 segment
   /// 1 connection
   /// 2 label
-  @Property()
+  
   int type;
 
   List<Vector3> shapePoints;
@@ -87,11 +87,10 @@ class DiagramVisObject{
   Polygon get visObject{
 
     if(this.label.isNotEmpty){
-      ShapeGeometry fontgeometry;
-      Mesh fontmesh;
-      var fontshapes = FontUtils.generateShapes(this.label, 20);
+      TextGeometryBuilder fontgeometry;
+      var fontshapes = generateShapes(this.label, 20);
 
-      fontgeometry = new ShapeGeometry(fontshapes, curveSegments: 20);
+      fontgeometry = new TextGeometryBuilder(fontshapes, 20);
 
       Matrix4 posMat = new Matrix4.fromList(this.labelMatrix);
 
@@ -103,7 +102,7 @@ class DiagramVisObject{
       mat.multiply(posMat);
 
       for(var i = 0; i < fontgeometry.vertices.length; i++){
-        fontgeometry.vertices[i] = fontgeometry.vertices[i].applyMatrix4(mat);
+        fontgeometry.vertices[i].applyMatrix4(mat);
       }
 
       return new PolygonText(this.label, this.labelMatrix, this.lineColor);
@@ -148,9 +147,11 @@ class DiagramVisObject{
     }
   }
 
+  @Deprecated("Three.dart was removed, this feature is deprecated")
   dynamic get shapeMaterial{
     //print("${opacity}");
-    if(isOutlined){
+    throw new StateError("Three.dart was removed, this feature is deprecated");
+    /*if(isOutlined){
       return [
         new MeshLambertMaterial()
           ..color = materialColor
@@ -165,6 +166,6 @@ class DiagramVisObject{
         ..ambient = ambientColor
         ..transparent = isTransparent
         ..opacity = opacity;
-    }
+    }*/
   }
 }

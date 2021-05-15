@@ -43,7 +43,7 @@ class HCoordinate2D implements HomogeneousCoordinate<Vector3>{
     return this.getDescartesCoordinate().distanceTo(point.getDescartesCoordinate() as Vector2);
   }
 
-  HCoordinate2D crossProduct(List<HomogeneousCoordinate<Vector3>> point){
+  HCoordinate2D crossProduct(List<HomogeneousCoordinate> point){
     //{y1 z2 - z1 y2; z1 x2 - x1 z2; x1 y2 - y1 x2}
     return new HCoordinate2D(new Vector3(
         this.y * point.first.z - this.z * point.first.y,
@@ -56,7 +56,7 @@ class HCoordinate2D implements HomogeneousCoordinate<Vector3>{
   set coordinate(Vector3 value){this._coordinate = value;}
 
   HomogeneousCoordinate<Vector3> rotateAroundPoint(dynamic point, double angle) {
-    this.translate((point as Vector2).clone().negate());
+    this.translate((point as Vector2).clone()..negate());
     this.rotateAroundOrigin(angle);
     this.translate(point as Vector2);
 
@@ -79,7 +79,7 @@ class HCoordinate2D implements HomogeneousCoordinate<Vector3>{
     new Matrix3.columns(
         new Vector3(value, 0.0, 0.0),
         new Vector3(0.0, value, 0.0),
-        new Vector3(0.0, 0.0, value)
+        new Vector3(0.0, 0.0, 1.0)
     ).transform(this._coordinate);
 
     return this;
@@ -109,6 +109,9 @@ class HCoordinate2D implements HomogeneousCoordinate<Vector3>{
     return this;
   }
 
+  double dotProduct(HomogeneousCoordinate point){
+    return this.normalized().toUnitVector().coordinate.dot(point.normalized().toUnitVector().coordinate);
+  }
 
   HomogeneousCoordinate<Vector3> normalize(){
     if(this._coordinate.z != 0.0) {
@@ -144,9 +147,9 @@ class HCoordinate2D implements HomogeneousCoordinate<Vector3>{
 
   HomogeneousCoordinate<Vector3> toUnitVector(){
     if(this.isVector){
-      this._coordinate.xy = this._coordinate.xy.normalize();
+      this._coordinate.xy = this._coordinate.xy..normalize();
     }else{
-      this._coordinate.xy = this.getDescartesCoordinate().normalize();
+      this._coordinate.xy = this.getDescartesCoordinate()..normalize();
       this._coordinate.z = 0.0;
     }
     return this;

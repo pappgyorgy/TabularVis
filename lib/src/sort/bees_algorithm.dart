@@ -5,37 +5,9 @@ class BeesAlgorithm implements SortAlgorithm {
   int max_number_step = 10;
   int number_of_try = 10;
 
-  int number_of_scout_bees = 20;
+  int number_of_scout_bees = 10;
   int number_of_patches = 2;
-  int number_of_elite_bees = 4;
-
-  State getRandomState(State x) {
-    State helper = x.copy();
-    State helper2 = x.copy();
-
-    var helperIndexList = new List.generate(
-        helper.order.length, (int index) {
-      return index + 1;
-    });
-    helperIndexList.shuffle(
-        new Random(new DateTime.now().millisecondsSinceEpoch));
-    int i = 0;
-    for (int newIndex in helperIndexList) {
-      helper.order[i].label.index = newIndex;
-      helper.orderIndexHelper[newIndex] = i;
-      i++;
-    }
-
-    for (SortConnection conn in helper.listOfConnections) {
-      int alma = 0;
-      //conn.updateIndex();
-      alma = 0;
-    }
-
-    helper.calculate();
-
-    return helper2..changeStateByOrder(helper.order);
-  }
+  int number_of_elite_bees = 2;
 
   int replaceTheMinEliteScout(List<State> eliteScout, State replacement) {
     int minIndex = eliteScout.length - 1;
@@ -90,7 +62,7 @@ class BeesAlgorithm implements SortAlgorithm {
       }
     }
     if(bestIndex > -1){
-      (x as DiagramStateFullWithoutCopy).chooseNeighbour(bestIndex, true);
+      (x as DiagramStateFullWithoutCopy).chooseNeighbour(bestIndex, isPermanent: true);
     }
     return intersectionValue;
   }
@@ -137,7 +109,7 @@ class BeesAlgorithm implements SortAlgorithm {
 
       }
       if(endBestIndex > -1) {
-        (x as DiagramStateFullWithoutCopy).chooseNeighbour(endBestIndex, true);
+        (x as DiagramStateFullWithoutCopy).chooseNeighbour(endBestIndex, isPermanent: true);
         //print("## ${x.order}: ${x.getValue()} ##");
       }
       bestIndex = endBestIndex;
@@ -146,122 +118,225 @@ class BeesAlgorithm implements SortAlgorithm {
     return intersectionValue;
   }
 
-  State sequenceAll(State x) {
-    int bestIndex;
+  State sequenceAll(State currentState) {
     int iterationIndex = 0;
-    int bestStateValue = x.getValue();
-    int numberOfRandomJump = 5;
-    int randomJumpIndex = 0;
 
-    List<State> eliteScoutBees = new List<State>();
-    Map<int, List<State>> eliteBees = new Map<int, List<State>>();
+    Random rnd = new Random(new DateTime.now().millisecondsSinceEpoch);
+
+    List<int> eliteBees = new List<int>.generate(this.number_of_patches, (_)=>0);
     List<State> scoutBees = new List<State>();
 
     int bestValue = 999999999999999;
 
     //init the scout bees
     for (var i = 0; i < number_of_scout_bees; i++) {
-      scoutBees.add((x.clone() as DiagramStateFullWithoutCopy).chooseRandomState());
+      scoutBees.add(currentState.clone());
+
+      scoutBees.last.chooseRandomState(enableHelper: false, enablePreCalculation: false, setFinalOrder: false);
+      scoutBees.last.saveTemp();
     }
+
+    scoutBees.sort((a, b) => a.compareTo(b));
 
     int previousBestValue = bestValue;
     int sameSince = 0;
 
-    do {
+    var numberOfEliteBeesPerPatch = this.number_of_elite_bees ~/ this.number_of_patches;
 
-      List<int> changedPatchIndices = new List<int>();
-      List<int> patchMinSearchHelper = new List<int>();
+    int bestBeeInPatch = 0;
 
-      if(iterationIndex != 0) {
-        //init the scout bees
-        for (var i = number_of_scout_bees - 1; i >= eliteScoutBees.length; i--) {
-          scoutBees[i] = (scoutBees[i] as DiagramStateFullWithoutCopy).chooseRandomState();
+    List<List<State>> eliteBeesPatch = new List<List<State>>(this.number_of_patches);
+    for (var i = 0; i < this.number_of_patches; i++) {
+      eliteBeesPatch[i] = new List<State>(numberOfEliteBeesPerPatch);
+      for (var j = 0; j < numberOfEliteBeesPerPatch; j++) {
+        eliteBeesPatch[i][j] = scoutBees[i].clone();
+
+        bestBeeInPatch = scoutBees[i].numberOfIntersection;
+
+        eliteBeesPatch[i][j].chooseNeighbourAndDecideToKeepByFunc(
+            rnd.nextInt(currentState.numberOfNeighbours()-1) + 1,
+            functionToDecide: (int numberOfIntersection){
+              int difference = numberOfIntersection - scoutBees[i].numberOfIntersection;
+              return (difference < 0);
+            },
+            enablePreCalculate: false
+        );
+
+        if(bestBeeInPatch < eliteBeesPatch[i][j].numberOfIntersection){
+          bestBeeInPatch = eliteBeesPatch[i][j].numberOfIntersection;
+          eliteBees[i] = j;
         }
       }
+    }
+
+    List<int> patchesOrder = new List<int>.generate(this.number_of_patches, (i)=>i);
+    patchesOrder.sort((int a, int b){
+      return eliteBeesPatch[a][eliteBees[a]].compareTo(eliteBeesPatch[b][eliteBees[b]]);
+    });
+
+    var numberOfGroupsMinusOne = currentState.diagramElements.rootElement.numberOfChildren -1;
+    var numberOfPossNeighbours = currentState.numberOfNeighbours();
+
+    do {
+
+      //init the scout bees
+      for (var i = 0; i < scoutBees.length; i++) {
+        scoutBees[i].chooseRandomState(enableHelper: false, enablePreCalculation: false, setFinalOrder: false);
+        //print(scoutBees[i].numberOfIntersection);
+        scoutBees[i].saveTemp();
+      }
+
 
       //sort the scout to find the best ones
       scoutBees.sort((a, b) => a.compareTo(b));
 
-      //create the patches
+      var previousIntersectionValue = 0;
+      int bestBeeInPatch = 0;
+
+      int indexOfLastlyUpdatedPatch = this.number_of_patches;
+      int previousIndexOfLastlyUpdatedPatch = indexOfLastlyUpdatedPatch;
       for (var i = 0; i < number_of_patches; i++) {
-        var minIndex = replaceTheMinEliteScout(
-            eliteScoutBees, scoutBees[i]);
-        changedPatchIndices.add(minIndex);
+
+        for (var k = indexOfLastlyUpdatedPatch - 1; k >= 0; k--) {
+          if (scoutBees[i].numberOfIntersection <
+              eliteBeesPatch[patchesOrder[k]][eliteBees[k]].numberOfIntersection) {
+
+            eliteBeesPatch[patchesOrder[k]][eliteBees[k]].propagateTempToFinal();
+
+            bestBeeInPatch =
+                eliteBeesPatch[patchesOrder[k]][eliteBees[k]].numberOfIntersection;
+
+            for (var j = 0; j < numberOfEliteBeesPerPatch; j++) {
+              scoutBees[i].copySavedStateIntoAnother(eliteBeesPatch[patchesOrder[k]][j]);
+
+              var minValueNeighbour = -1;
+              eliteBeesPatch[patchesOrder[k]][j].maxConflictConnection().forEach((int maxIntersectionNeighbour){
+
+                if(maxIntersectionNeighbour + numberOfGroupsMinusOne > numberOfPossNeighbours){
+                  throw new StateError("Miscalculated neighbour for max conflict connection");
+                }
+
+                (eliteBeesPatch[patchesOrder[k]][j] as StateVisObjConnectionMod).preCalculateNeighboursValue(maxIntersectionNeighbour, maxIntersectionNeighbour + numberOfGroupsMinusOne);
+                if(eliteBeesPatch[patchesOrder[k]][j].bestNeighbourIndex > -1){
+                  if(eliteBeesPatch[patchesOrder[k]][j].neighboursValues[eliteBeesPatch[patchesOrder[k]][j].bestNeighbourIndex] < bestBeeInPatch){
+                    bestBeeInPatch = eliteBeesPatch[patchesOrder[k]][j].neighboursValues[eliteBeesPatch[patchesOrder[k]][j].bestNeighbourIndex];
+                    minValueNeighbour = eliteBeesPatch[patchesOrder[k]][j].bestNeighbourIndex;
+                  }
+                }
+
+              });
+
+              if(minValueNeighbour > -1) {
+                eliteBeesPatch[patchesOrder[k]][j].chooseNeighbourIntoTemp(minValueNeighbour, enablePreCalculate: false);
+              }
+
+              /*(eliteBeesPatch[patchesOrder[k]][j] as StateVisObjConnectionMod).preCalculateNeighboursValue();
+
+              if(eliteBeesPatch[patchesOrder[k]][j].bestNeighbourIndex < 0){
+                continue;
+              }
+
+              if(eliteBeesPatch[patchesOrder[k]][j].neighboursValues[eliteBeesPatch[patchesOrder[k]][j].bestNeighbourIndex] < bestBeeInPatch){
+                eliteBeesPatch[patchesOrder[k]][j].chooseNeighbourIntoTemp(
+                    eliteBeesPatch[patchesOrder[k]][j].bestNeighbourIndex,
+                    enablePreCalculate: false
+                );
+                bestBeeInPatch = eliteBeesPatch[patchesOrder[k]][j].numberOfIntersection;
+                eliteBees[patchesOrder[k]] = j;
+              }*/
+
+              /*previousIntersectionValue =
+                  eliteBeesPatch[patchesOrder[k]][j].numberOfIntersection;
+              eliteBeesPatch[patchesOrder[k]][j].chooseNeighbourAndDecideToKeepByFunc(
+                  rnd.nextInt(currentState.numberOfNeighbours() - 1) + 1,
+                  functionToDecide: (int numberOfIntersection) {
+                    int difference = numberOfIntersection -
+                        previousIntersectionValue;
+                    return (difference < 0);
+                  },
+                  enablePreCalculate: false
+              );*/
+
+              //Set the best bee in patch
+              /*if (bestBeeInPatch > eliteBeesPatch[patchesOrder[k]][j].numberOfIntersection) {
+                bestBeeInPatch = eliteBeesPatch[patchesOrder[k]][j].numberOfIntersection;
+                eliteBees[patchesOrder[k]] = j;
+              }*/
+            }
+            indexOfLastlyUpdatedPatch = k;
+            break;
+          }
+        }
+
+        if(indexOfLastlyUpdatedPatch <= 0 || previousIndexOfLastlyUpdatedPatch == indexOfLastlyUpdatedPatch){
+          break;
+        }
       }
 
-      //eliteScoutBees.sort((a,b) => a.compareTo(b));
+      for(int i = indexOfLastlyUpdatedPatch - 1; i >= 0; i--){
+        bestBeeInPatch =
+            eliteBeesPatch[patchesOrder[i]][eliteBees[i]].numberOfIntersection;
 
-      int averageEliteBeesPerPatch = number_of_elite_bees ~/ number_of_patches;
+        for (var j = 0; j < numberOfEliteBeesPerPatch; j++) {
 
-      //Fill the elements newly found patches with new elements
-      for (var i = 0; i < changedPatchIndices.length; i++) {
-        List<int> selectedNeighbours = new List<int>();
-        eliteBees[changedPatchIndices[i]] = new List<State>();
-        for (var j = 0; j < averageEliteBeesPerPatch; j++) {
-          int newNeighbour;
-          do {
-            newNeighbour =
-                new Random().nextInt(eliteScoutBees[i].numberOfNeighbours());
-          } while (selectedNeighbours.contains(newNeighbour));
+          var minValueNeighbour = -1;
+          eliteBeesPatch[patchesOrder[i]][j].maxConflictConnection().forEach((int maxIntersectionNeighbour){
 
-          eliteBees[changedPatchIndices[i]].add((eliteScoutBees[i] as DiagramStateFullWithoutCopy).clone()
-            ..chooseNeighbour(newNeighbour));
+            if(maxIntersectionNeighbour + numberOfGroupsMinusOne > numberOfPossNeighbours){
+              throw new StateError("Miscalculated neighbour for max conflict connection");
+            }
+
+            (eliteBeesPatch[patchesOrder[i]][j] as StateVisObjConnectionMod).preCalculateNeighboursValue(maxIntersectionNeighbour, maxIntersectionNeighbour + numberOfGroupsMinusOne);
+            if(eliteBeesPatch[patchesOrder[i]][j].bestNeighbourIndex > -1){
+              if(eliteBeesPatch[patchesOrder[i]][j].neighboursValues[eliteBeesPatch[patchesOrder[i]][j].bestNeighbourIndex] < bestBeeInPatch){
+                bestBeeInPatch = eliteBeesPatch[patchesOrder[i]][j].neighboursValues[eliteBeesPatch[patchesOrder[i]][j].bestNeighbourIndex];
+                minValueNeighbour = eliteBeesPatch[patchesOrder[i]][j].bestNeighbourIndex;
+              }
+            }
+
+          });
+
+          if(minValueNeighbour > -1) {
+            eliteBeesPatch[patchesOrder[i]][j].chooseNeighbourIntoTemp(minValueNeighbour, enablePreCalculate: false);
+          }
+
+          /*(eliteBeesPatch[patchesOrder[i]][j] as StateVisObjConnectionMod).preCalculateNeighboursValue();
+          if(eliteBeesPatch[patchesOrder[i]][j].bestNeighbourIndex < 0){
+            continue;
+          }
+          if(eliteBeesPatch[patchesOrder[i]][j].neighboursValues[eliteBeesPatch[patchesOrder[i]][j].bestNeighbourIndex] < bestBeeInPatch){
+            eliteBeesPatch[patchesOrder[i]][j].chooseNeighbourIntoTemp(
+                eliteBeesPatch[patchesOrder[i]][j].bestNeighbourIndex,
+                enablePreCalculate: false
+            );
+            bestBeeInPatch = eliteBeesPatch[patchesOrder[i]][j].numberOfIntersection;
+            eliteBees[patchesOrder[i]] = j;
+          }*/
+
+          /*previousIntersectionValue =
+              eliteBeesPatch[patchesOrder[i]][j].numberOfIntersection;
+          eliteBeesPatch[patchesOrder[i]][j].chooseNeighbourAndDecideToKeepByFunc(
+              rnd.nextInt(currentState.numberOfNeighbours() - 1) + 1,
+              functionToDecide: (int numberOfIntersection) {
+                int difference = numberOfIntersection -
+                    previousIntersectionValue;
+                return (difference < 0);
+              },
+              enablePreCalculate: false
+          );
+
+          //Set the best bee in patch
+          if (bestBeeInPatch > eliteBeesPatch[patchesOrder[i]][j].numberOfIntersection) {
+            bestBeeInPatch = eliteBeesPatch[patchesOrder[i]][j].numberOfIntersection;
+            eliteBees[patchesOrder[i]] = j;
+          }*/
         }
       }
 
+      patchesOrder.sort((int a, int b){
+        return eliteBeesPatch[b][eliteBees[b]].compareTo(eliteBeesPatch[a][eliteBees[a]]);
+      });
 
-      //Rearrange the patches bees between each other
-      /*for(var i = 0; i < number_of_patches; i++){
-        int nextBestPatch = getTheNextMinState(eliteScoutBees, patchMinSearchHelper);
-
-        if(eliteBees[nextBestPatch].length < averageEliteBeesPerPatch + number_of_patches - 1){
-          var difference = (averageEliteBeesPerPatch + number_of_patches - 1) - eliteBees[nextBestPatch].length;
-          List<int> selectedNeighbours = new List<int>();
-          for(var i = 0; i < difference; i++){
-            int newNeighbour = new Random().nextInt(
-                eliteScoutBees[nextBestPatch].numberOfNeighbours());
-
-            do {
-              newNeighbour =
-                  new Random().nextInt(eliteScoutBees[nextBestPatch].numberOfNeighbours());
-            } while (selectedNeighbours.contains(newNeighbour));
-
-            eliteBees[nextBestPatch].add(eliteScoutBees[nextBestPatch].copy()
-              ..chooseNeighbour(newNeighbour));
-          }
-        }else{
-          var difference = eliteBees[nextBestPatch].length - (averageEliteBeesPerPatch + number_of_patches - 1);
-          eliteBees[nextBestPatch].sort((a,b) => a.compareTo(b));
-          for(var i = 0; i < difference; i++){
-            eliteBees[nextBestPatch].removeLast();
-          }
-        }
-
-        patchMinSearchHelper.add(nextBestPatch);
-      }*/
-
-      //Take one step with each elite search bee and update the best scout bees wit the best position
-
-      for(var i = 0; i < eliteBees.length; i++){
-        int minIndex = 0;
-        int minValue = 999999999999999;
-        for(var j = 0; j < eliteBees[i].length; j++){
-          //int result = takeOneStep(eliteBees[i][j]);
-          //int result = takeOneStep(eliteBees[i][j]);
-          int result = performMinConflict(eliteBees[i][j]);
-          if(result < minValue){
-            minIndex = j;
-            minValue = result;
-          }
-        }
-        if(eliteScoutBees[i].getValue() >= eliteBees[i][minIndex].getValue()){
-          eliteScoutBees[i] = eliteBees[i][minIndex];
-        }
-        if(eliteScoutBees[i].getValue() < bestValue){
-          bestIndex = i;
-          bestValue = eliteScoutBees[i].getValue();
-        }
-      }
 
       /*StringBuffer sb = new StringBuffer("${iterationIndex}: ");
       for(var i = 0; i < eliteScoutBees.length; i++){
@@ -271,21 +346,23 @@ class BeesAlgorithm implements SortAlgorithm {
       print(sb.toString());*/
       iterationIndex++;
 
-      if(previousBestValue == bestValue){
+      if(previousBestValue == eliteBeesPatch[patchesOrder[0]][eliteBees[patchesOrder[0]]].numberOfIntersection){
         sameSince++;
         if(sameSince > 1){
           break;
         }
-      }else{
+      }else if(previousBestValue > eliteBeesPatch[patchesOrder[0]][eliteBees[patchesOrder[0]]].numberOfIntersection){
+        eliteBeesPatch[0][eliteBees[0]].save();
         previousBestValue = bestValue;
         sameSince = 0;
       }
 
     } while (iterationIndex < max_number_step);
 
-    (eliteScoutBees[bestIndex] as DiagramStateFullWithoutCopy).save();
-    (eliteScoutBees[bestIndex] as DiagramStateFullWithoutCopy).finalize();
-    return eliteScoutBees[bestIndex];
+    //eliteBeesPatch[0][eliteBees[0]].updateFromFinalOrder();
+    //return eliteBeesPatch[0][eliteBees[0]];
+    eliteBeesPatch[0][eliteBees[0]].copySavedStateIntoAnother(currentState, true);
+    return currentState;
   }
 
 

@@ -20,6 +20,7 @@ class MathHomogeneous{
 
   /// Return with the center of the circle which is go trough the two given points.
   /// The two given points [firstPointOnCircle], [secondPointOnCircle] are on the given [circle]
+  /// The result circle is the base of a poincare line that is go trough the two given points
   HomogeneousCoordinate someCircle(SimpleCircle circle,
                              HomogeneousCoordinate firstPointOnCircle,
                              HomogeneousCoordinate secondPointOnCircle) {

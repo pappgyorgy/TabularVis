@@ -35,12 +35,12 @@ class DiagramGeomState extends State{
   }
 
   @override
-  void changeStateByOrder(List<VisualObject> order) {
+  void changeStateByOrder(dynamic order) {
     // TODO: implement changeStateByOrder
   }
 
   @override
-  void chooseNeighbour(int neighbour) {
+  void chooseNeighbour(int neighbour, {bool isPermanent = false, bool enablePreCalculate = false, int startRange = 1, int endRange = -1}) {
     // TODO: implement chooseNeighbour
   }
 
@@ -60,12 +60,12 @@ class DiagramGeomState extends State{
   }
 
   @override
-  int diffNeighbour(int neighbour) {
+  int diffNeighbour(int neighbour, {bool isPermanent = false, bool enablePreCalculate = false, int startRange = 1, int endRange = -1}) {
     // TODO: implement diffNeighbour
   }
 
   @override
-  int diffNeighbourByOrder(List<VisualObject> order) {
+  int diffNeighbourByOrder(dynamic order) {
     // TODO: implement diffNeighbourByOrder
   }
 
@@ -101,7 +101,7 @@ class DiagramGeomState extends State{
   }
 
   @override
-  State chooseRandomState() {
+  State chooseRandomState({bool setFinalOrder = true, bool enablePreCalculation = false, bool enableHelper = false}) {
     throw new UnimplementedError("unimplemented");
   }
 

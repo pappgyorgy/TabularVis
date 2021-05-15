@@ -1,16 +1,17 @@
-import 'package:angular2/core.dart';
-import 'package:three/three.dart' show Color;
+import 'package:angular/core.dart';
+import 'package:angular/angular.dart';
+import '../graphic/render.dart' show Color;
 import 'dart:math';
 import 'dart:html';
 
 //polymer elements
-import 'package:polymer/polymer.dart';
+/*import 'package:polymer/polymer.dart';
 import 'package:polymer_elements/iron_flex_layout/classes/iron_flex_layout.dart';
 import 'package:polymer_elements/paper_icon_button.dart';
 import 'package:polymer_elements/iron_icons.dart';
 import 'package:polymer_elements/paper_fab.dart';
 import 'package:polymer_elements/image_icons.dart';
-import 'package:polymer_elements/av_icons.dart';
+import 'package:polymer_elements/av_icons.dart';*/
 
 //requirements
 import 'interaction_handler.dart';
@@ -18,7 +19,8 @@ export 'interaction_handler.dart';
 
 @Component(
     selector: 'interaction-button',
-    templateUrl: 'template/interaction-button.html'
+    templateUrl: 'template/interaction-button.html',
+    directives: const <dynamic> [coreDirectives,],
 )
 class InteractionButton implements OnInit, AfterViewInit{
   List<Interaction> listOfInteractions;

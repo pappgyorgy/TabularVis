@@ -1,6 +1,6 @@
 library application;
 
-import 'package:angular2/core.dart';
+import 'package:angular/core.dart';
 import 'dart:html';
 import 'dart:core';
 import 'dart:async';
@@ -10,12 +10,12 @@ import 'dart:math';
 import 'math/math.dart';
 import 'graphic/render.dart';
 import 'diagram/diagram_manager.dart';
-import 'package:three/three.dart';
-import 'package:three/extras/scene_utils.dart' as SceneUtils;
 import 'data/data_processing.dart';
 import 'dart:async';
 import 'app_logger.dart';
 import 'geometry/geometry.dart';
+export 'geometry/geometry.dart' show ShapeType;
+import 'package:chronosgl/chronosgl.dart' as CGL;
 
 export 'graphic/render.dart';
 export 'app_logger.dart';
@@ -58,6 +58,7 @@ class Application{
   NotificationType latestNotificationType = NotificationType.info;
 
   bool isDiagramAlreadyGenerated = false;
+  bool updateDiagramDefaultOrder = false;
 
   StreamController<String> _notificationStream = new StreamController<String>();
 
@@ -74,13 +75,15 @@ class Application{
     return this._vis.renderCanvasElement as CanvasElement;
   }
 
-  void resizeRenderer(double width, double height){
+  void resizeRenderer(int width, int height){
     this._vis.changeRendererSize(width, height);
   }
 
   ///Initialize render
   Application(this._dataProcessing, this._vis, this._sortManager,
       this._log, this._diagramManager){
+      this.checkForUpdate(0);
+      //testSortAlgorithm();
     //this.addNotification(NotificationType.info, "Application initialized");
   }
 
@@ -99,7 +102,7 @@ class Application{
     }
   }
 
-  Map<String, InputData> getInputData([String ID, List<int> options = null, bool getEmptyTable = false, bool regenerateTable = false]){
+  Map<String, InputData> getInputData([String ID, List<num> options = null, bool getEmptyTable = false, bool regenerateTable = false]){
     var retVal = new Map<String, InputData>();
     if((ID == null || ID.isEmpty) || regenerateTable){
       String newID = (ID == null || ID.isEmpty) ? MathFunc.generateUniqueID(dataID) : ID;
@@ -115,10 +118,22 @@ class Application{
     }
   }
 
-  void createDiagram(String ID){
-    setLatestNotificationMessage(NotificationType.info, "Diagram succesfully created");
+  VisualObject getDiagramVisualObjectByID(String ID){
+    return this._diagramManager.getLatestDiagramVisualObjByID(ID);
+  }
 
-    //try {
+  VisualObject getActualDiagramVisualObject(){
+    return this.getDiagramVisualObjectByID(this._diagramManager.latestActualDiagramID);
+  }
+
+  void createDiagram(String ID){
+    //setLatestNotificationMessage(NotificationType.info, "Diagram succesfully created");
+
+    this._diagramManager.createDiagram(ID);
+
+    isDiagramAlreadyGenerated = true;
+
+    /*//try {
       VisualObject finalVisObject = _processData(ID);
 
       if(_sortManager.isSortEnabled && (tableChanged || sortSettingsChanged)){
@@ -132,7 +147,7 @@ class Application{
 
     /*}catch(error){
       _log.sender.severe(error);
-    }*/
+    }*/*/
   }
 
   void updateDataMatrixFromUploadedFile(String ID, InputData data){
@@ -147,7 +162,7 @@ class Application{
         this._diagramManager.updateVisualObjectData(ID, retVal);
         return retVal;
       }else{
-        return this._diagramManager.getVisualObjByID(ID);
+        return this._diagramManager.getLatestDiagramVisualObjByID(ID, resetDefaultOrder: !_sortManager.isSortEnabled);
       }
     }catch(error, stacktrace){
       _log.sender.warning(error);
@@ -161,7 +176,7 @@ class Application{
 
       Diagram oldDiagram = _diagramManager.getDiagramByID(diagramRoot.id);
 
-      oldDiagram.modifyDiagram(diagramRoot);
+      oldDiagram.modifyDiagram();
 
       var diagramPointData = oldDiagram.getDiagramsShapesPoints(diagramRoot);
 
@@ -170,7 +185,7 @@ class Application{
       }
 
       _vis.clearCanvas();
-      _vis.diagrams[diagramRoot.id] = new Object3D();
+      _vis.diagrams[diagramRoot.id] = new CGL.Node.Container(diagramRoot.id);
 
       _vis.drawDiagram2(diagramRoot.id, diagramPointData);
 
@@ -207,7 +222,7 @@ class Application{
       }
 
       _vis.clearCanvas();
-      _vis.diagrams[diagramRoot.id] = new Object3D();
+      _vis.diagrams[diagramRoot.id] = new CGL.Node.Container(diagramRoot.id);
 
       _vis.drawDiagram2(diagramRoot.id, diagramPointData);
 
@@ -228,7 +243,8 @@ class Application{
     }else{
       ConnectionVis.coloringScheme = DiagramColoring.circos;
     }
-    this.updatePoints(this._diagramManager.latestActualDiagramID);
+    this.requestDiagramUpdate(this._diagramManager.latestActualDiagramID);
+    //this.updatePoints(this._diagramManager.latestActualDiagramID);
   }
 
   void applySegmentsColor(VisConnection conn, int type){
@@ -241,7 +257,8 @@ class Application{
 
     conn.config.connectionColor = ConnectionVis.mainSegmentsColor[id];
 
-    this.updatePoints(this._diagramManager.latestActualDiagramID);
+    this.requestDiagramUpdate(this._diagramManager.latestActualDiagramID);
+    //this.updatePoints(this._diagramManager.latestActualDiagramID);
   }
 
   void setAllConnectionsColorGrey(bool checked){
@@ -257,7 +274,8 @@ class Application{
         connections[connections.keys.elementAt(i)].config.connectionColor = ConnectionVis.mainSegmentsColor[id];
       }
     }
-    this.updatePoints(this._diagramManager.latestActualDiagramID);
+    this.requestDiagramUpdate(this._diagramManager.latestActualDiagramID);
+    //this.updatePoints(this._diagramManager.latestActualDiagramID);
   }
 
   void changeWayToDrawDiagram(int index){
@@ -265,11 +283,19 @@ class Application{
       = MatrixValueRepresentation.values[index];
 
     latestRepresentation = MatrixValueRepresentation.values[index];
-    if(MatrixValueRepresentation.values[index] == MatrixValueRepresentation.circos){
-      this._diagramManager.getLatestDiagram().outerSegmentCircle.radius = 160.0;
+    this._diagramManager.getLatestDiagram().updateCirclesRadius();
+    diagramTypeChange = true;
+    this.redrawLatestDiagram();
+  }
+
+  void changeWayToDrawLinesInDiagram(int index){
+
+    if(index == 0){
+      DiagramManager.connectionType = ShapeType.bezier;
     }else{
-      this._diagramManager.getLatestDiagram().outerSegmentCircle.radius = 250.0;
+      DiagramManager.connectionType = ShapeType.poincare;
     }
+
     diagramTypeChange = true;
     this.redrawLatestDiagram();
   }
@@ -304,12 +330,13 @@ class Application{
           this._vis.toogleFreeMovement();
         break;
       case VisualizationAction.download:
-        String imageDataURL = await this._vis.canvasDataURL;
-        if(imageDataURL != null){
-          this.downloadImageToClient("Diagram:${this._diagramManager.latestActualDiagramID}.png", imageDataURL);
-        }else{
-          throw new StateError("Image data URL is missing");
-        }
+        this._vis.canvasDataURL.then((String imageDataURL){
+          if(imageDataURL != null){
+            this.downloadImageToClient("Diagram:${this._diagramManager.latestActualDiagramID}.png", imageDataURL);
+          }else{
+            throw new StateError("Image data URL is missing");
+          }
+        }).catchError((Object error){print(error);});
         break;
       case VisualizationAction.settings:
         break;
@@ -372,7 +399,7 @@ class Application{
 
   Future<bool> updatePoints(String diagramID) async{
 
-    VisualObject finalVisObject = this._diagramManager.getVisualObjByID(diagramID);
+    VisualObject finalVisObject = this._diagramManager.getLatestDiagramVisualObjByID(diagramID);
 
     if(sortSettingsChanged){
       VisualObject diagramRoot = _processData(diagramID);
@@ -389,7 +416,7 @@ class Application{
     }
 
     _vis.clearCanvas();
-    _vis.diagrams[finalVisObject.id] = new Object3D();
+    _vis.diagrams[finalVisObject.id] = new CGL.Node.Container(finalVisObject.id);
 
     _vis.drawDiagram2(finalVisObject.id, diagramPointData);
 
@@ -420,7 +447,8 @@ class Application{
       if(latestDiagramID != null){
         updatePoints(latestDiagramID);
       }*/
-      this.updatePoints(this._diagramManager.latestActualDiagramID);
+      this.requestDiagramUpdate(this._diagramManager.latestActualDiagramID);
+      //this.updatePoints(this._diagramManager.latestActualDiagramID);
     }catch(error, stacktrace){
       //print("noMod");
     }
@@ -453,22 +481,56 @@ class Application{
     }
   }
 
-  void redrawLatestDiagram() {
-    this.createDiagram(this._diagramManager.latestActualDiagramID);
-    try{
-
-    }catch(error){
-      print(error);
+  void updateDiagramShapes(List<ShapeForm> listOfShapes, String diagramID){
+    if(this._vis == null){
+      throw new StateError("Dependeny injection is not working well, visualization is missing");
     }
+
+    this._vis.clearCanvas();
+    this._vis.diagrams[diagramID] = new CGL.Node.Container(diagramID);
+
+    this._vis.drawDiagram2(diagramID, listOfShapes);
+
+    print("pointsUpdated");
+  }
+
+  void redrawLatestDiagram() {
+    //this.createDiagram(this._diagramManager.latestActualDiagramID);
+    //try{
+      if(this._sortManager.isSortEnabled){
+        if(sortSettingsChanged) {
+          var sortState = this._sortManager.requireSort(
+              this._diagramManager
+                  .getLatestDiagram()
+                  .actualDataObject
+          );
+          this._sortManager.runSort(sortState.root);
+          _log.sender.fine(sortState);
+        }
+      }else{
+          this._diagramManager.resetElementsDefaultOrder(
+              this._diagramManager.latestActualDiagramID,
+              this.updateDiagramDefaultOrder);
+          this.updateDiagramDefaultOrder = false;
+      }
+
+      List<ShapeForm> listOfShapes = this._diagramManager.reDrawLatestDiagram();
+      updateDiagramShapes(listOfShapes, this._diagramManager.latestActualDiagramID);
+
+    //}catch(error){
+      //print(error);
+    //}
   }
 
   void enableSegmentRandomColor(bool checked) {
     ConnectionManager.changAndUpdateSegmentColorPool(
-      this._diagramManager.latestActualDiagramID, checked
+      this._diagramManager.getLatestDiagram().actualDataObject.id, checked
     );
-    this.updatePoints(
+    //this.requestDiagramUpdate(this._diagramManager.latestActualDiagramID);
+    this.redrawLatestDiagram();
+    /*this.updatePoints(
       this._diagramManager.latestActualDiagramID
-    );
+    );*/
   }
 
   String _crateCircosFileFormat(DataMatrix matrixData) {
@@ -517,7 +579,7 @@ class Application{
     return sb.toString();
   }
 
-  int numberOfStateForTestingSoring = 14;
+  int numberOfStateForTestingSoring = 50;
   int numberOfTestRound = 1;
 
   void testSortAlgorithm(){
@@ -532,13 +594,15 @@ class Application{
 
     int size = 16;
 
+    StringBuffer sb = new StringBuffer();
+
     for(var h = 0; h < numberOfTestRound; h++) {
       _sortManager.resultOfSorting.clear();
       size += 5;
       print("size: ${size-1} -------------------------------------");
 
       for (var i = 1; i <= numberOfStateForTestingSoring; i++) {
-        var inputData = this.getInputData("", [size, 10, size, 10, 1, 1, 1, 100]);
+        var inputData = this.getInputData("", <int>[size, 10, size, 10, 1, 1, 1, 100]);
 
         var diagramID = inputData.keys.first;
         (inputData[diagramID] as DataMatrix);
@@ -546,17 +610,17 @@ class Application{
         generatedDiagrams.addAll(inputData);
         //print(inputData[diagramID].getDataForUI());
 
-        for (var algorithmIndex = 0;
-        algorithmIndex < SortAlgorithmType.values.length;
-        algorithmIndex++) {
+        for (var algorithmIndex = 0; algorithmIndex < 7; algorithmIndex++) {
+          //if(algorithmIndex == 2 || algorithmIndex == 5) {
+            for (var k = 0; k < 1; k++) {
+              var newDiagramMatrix = inputData[diagramID].copy();
+              var visObject = newDiagramMatrix.getVisualizationObjectHierarchy(
+                  true);
+              doSort(SortAlgorithmType.values[algorithmIndex], visObject);
 
-          for (var k = 0; k < 1; k++) {
-            var newDiagramMatrix = inputData[diagramID].copy();
-            var visObject = newDiagramMatrix.getVisualizationObjectHierarchy(true);
-            doSort(SortAlgorithmType.values[algorithmIndex], visObject);
-
-            //print(getPercent(SortAlgorithmType.values[algorithmIndex], k));
-          }
+              //print(getPercent(SortAlgorithmType.values[algorithmIndex], k/100, k));
+            }
+          //}
         }
 
         /*var newDiagramMatrix = inputData[diagramID].copy();
@@ -574,17 +638,63 @@ class Application{
 
 
       print("################");
+      sb.write("################\n");
+
+      List<Duration> averageTimePerAlg = new List.generate(7, (i)=>new Duration());
+      List<double> averagePercent = [0.0,0.0,0.0,0.0,0.0,0.0,0.0];
+      List<double> averageBeforeSort = [0.0,0.0,0.0,0.0,0.0,0.0,0.0];
+      List<double> averageAfterSort = [0.0,0.0,0.0,0.0,0.0,0.0,0.0];
+
 
       _sortManager.resultOfSorting.forEach((String diagram, List<Sort> sorts){
         sorts.forEach((Sort sortSate){
           print(sortSate.getSortStatistic());
+          sb.write("${sortSate.getSortStatistic()}\n");
+          averageTimePerAlg[sortSate.type.index] += sortSate.sortAlgorithmTimer.elapsed;
+          averagePercent[sortSate.type.index] += (1 - (sortSate.intersectionAfterSort / sortSate.intersectionBeforeSort));
+          averageBeforeSort[sortSate.type.index] += sortSate.intersectionBeforeSort;
+          averageAfterSort[sortSate.type.index] += sortSate.intersectionAfterSort;
         });
       });
 
       print("################");
+      sb.write("################\n");
+
+      print("OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO");
+      print("OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO");
+      sb.write("OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO\n");
+      sb.write("OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO\n");
+
+      for(var i = 0; i < 7; i++){
+        print("${SortAlgorithmType.values[i]},"
+            " ${averageBeforeSort[i] / numberOfStateForTestingSoring},"
+            " ${averageAfterSort[i] / numberOfStateForTestingSoring},"
+            " ${averagePercent[i] / numberOfStateForTestingSoring},"
+            " ${averageTimePerAlg[i] ~/ numberOfStateForTestingSoring}");
+        sb.write("${SortAlgorithmType.values[i]},"
+            " ${averageBeforeSort[i] / numberOfStateForTestingSoring},"
+            " ${averageAfterSort[i] / numberOfStateForTestingSoring},"
+            " ${averagePercent[i] / numberOfStateForTestingSoring},"
+            " ${averageTimePerAlg[i] ~/ numberOfStateForTestingSoring}\n");
+      }
+
+      print("OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO");
+      print("OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO");
+      sb.write("OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO\n");
+      sb.write("OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO\n");
+
+      print("################");
+      sb.write("################\n");
 
       print("-------------------------------------");
+      sb.write("-------------------------------------\n");
     }
+
+    var dateTime = new DateTime.now();
+    downloadFileToClient2(
+        "resultOfSorting_${dateTime.year}-${dateTime.month}-${dateTime.day}_${dateTime.hour}-${dateTime.minute}-${dateTime.second}",
+        sb.toString()
+    );
 
     sortAlgorithmTimer.stop();
     print("Time required to run: ${sortAlgorithmTimer.elapsed}");
@@ -606,6 +716,13 @@ class Application{
 
 
 
+  }
+
+  void downloadFileToClient2(String filename, String text){
+    AnchorElement tl = document.createElement('a');
+    tl..attributes['href'] = 'data:text/plain;charset=utf-8,' + Uri.encodeComponent(text)
+      ..attributes['download'] = filename
+      ..click();
   }
 
   String getPercent(dynamic type, double k, int index){
@@ -631,10 +748,8 @@ class Application{
 
   VisConnection handleCanvasMouseClick(int clickX, int clickY){
     HomogeneousCoordinate mouseClickPos = this._vis.getMousePosition(new Point(clickX, clickY));
-    //HomogeneousCoordinate mouseClickPos = this._vis.render.getMousePosition(new Point(clickX, clickY));
-    VisualObject rootElement = this._diagramManager.getVisualObjByID(this._diagramManager.latestActualDiagramID);
-    var connection = this._diagramManager.getLatestDiagram().getConnectionFromPosition(
-          rootElement, mouseClickPos);
+    var connection = this._diagramManager.getLatestDiagram()
+        .getConnectionFromPosition(mouseClickPos);
     return connection;
   }
 
@@ -666,15 +781,16 @@ class Application{
   }
 
   VisConnection get defaultConnection{
-    if(ConnectionManager.listOfConnection[this._diagramManager.latestActualDiagramID] != null){
+    return this._diagramManager.getLatestDiagram().defaultConnection;
+    /*if(ConnectionManager.listOfConnection[this._diagramManager.latestActualDiagramID] != null){
       return ConnectionManager.listOfConnection[this._diagramManager.latestActualDiagramID].values.elementAt(0);
     }else{
       return null;
-    }
+    }*/
   }
 
   void connectionsDirectionChange(int direction) {
-    ConnectionManager.listOfConnection[this._diagramManager.latestActualDiagramID].values.forEach((VisConnection conn){
+    ConnectionManager.listOfConnection[this._diagramManager.getLatestDiagram().actualDataObject.id].values.forEach((VisConnection conn){
       conn.direction = direction;
     });
     //this.updatePoints(this._diagramManager.latestActualDiagramID);
@@ -712,7 +828,46 @@ class Application{
         connections[connections.keys.elementAt(i)].config.connectionColor = ConnectionVis.mainSegmentsColor[id];
       }
     }
-    this.updatePoints(this._diagramManager.latestActualDiagramID);
+    this.requestDiagramUpdate(this._diagramManager.latestActualDiagramID);
+    //this.updatePoints(this._diagramManager.latestActualDiagramID);
+  }
+
+
+  Map<String, bool> updateWasRequested = new Map<String, bool>();
+  void requestDiagramUpdate(String ID){
+    updateWasRequested[ID] = true;
+  }
+
+  void checkForUpdate(num time){
+    window.requestAnimationFrame( checkForUpdate );
+
+    if(updateWasRequested.length > 0){
+      updateWasRequested.forEach((String key, bool value){
+        this.updatePoints(key);
+      });
+      updateWasRequested.clear();
+    }
+
+  }
+
+  void showDiagramGroupLabel(bool newStatus) {
+    this._diagramManager.getLatestDiagram().drawGroupLabel = newStatus;
+    this._diagramManager.getLatestDiagram().updateCirclesRadius();
+    this.redrawLatestDiagram();
+  }
+
+  void changeElementsIndex(String idOne, String idTwo, int indexOne, int indexTwo){
+    this._diagramManager.getLatestDiagram().changeElementsIndex(idOne, idTwo, indexOne, indexTwo);
+    this.updateDiagramDefaultOrder = true;
+  }
+
+  void initConnection() {
+    this._connectionStream.add(this._diagramManager.getLatestDiagram().defaultConnection);
+  }
+
+  void changeDiagramsConnectionsCurveType() {
+    this._diagramManager.getLatestDiagram().connectionType = DiagramManager.connectionType;
+    this.redrawLatestDiagram();
   }
 
 }

@@ -115,7 +115,7 @@ class DiagramState extends State{
   }
 
 
-    void chooseNeighbour(int neighbour) {
+    void chooseNeighbour(int neighbour, {bool isPermanent = false, bool enablePreCalculate = false, int startRange = 1, int endRange = -1}) {
       bool isfirst = neighbour % 2 == 0 ? true : false;
       SortConnection conn = listOfConnections[(neighbour / 2).floor()];
 
@@ -216,7 +216,7 @@ class DiagramState extends State{
     throw new UnimplementedError("unimplemented");
   }
 
-  int diffNeighbour(int neighbour) {
+  int diffNeighbour(int neighbour, {bool isPermanent = false, bool enablePreCalculate = false, int startRange = 1, int endRange = -1}) {
     DiagramState newState = this.copy();
     newState.calculate();
     newState.chooseNeighbour(neighbour);
@@ -232,17 +232,17 @@ class DiagramState extends State{
   }
 
   @override
-  void changeStateByOrder(List<VisualObject> order) {
+  void changeStateByOrder(dynamic order) {
     // TODO: implement changeStateByOrder
   }
 
   @override
-  int diffNeighbourByOrder(List<VisualObject> order) {
+  int diffNeighbourByOrder(List<dynamic> order) {
     // TODO: implement diffNeighbourByOrder
   }
 
   @override
-  State chooseRandomState() {
+  State chooseRandomState({bool setFinalOrder = true, bool enablePreCalculation = false, bool enableHelper = false}) {
     throw new UnimplementedError("unimplemented");
   }
 

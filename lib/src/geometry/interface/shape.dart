@@ -1,18 +1,20 @@
 part of visualizationGeometry;
 
 enum ShapeType {
-  line, mesh, simple, bezier
+  line, mesh, simple, poincare, bezier, heatmap, edgeBundle, blockConnection, uniqueScaleIndicator, barLabel
 }
 
 abstract class ShapeForm implements Comparable<ShapeForm>{
 
   factory ShapeForm(VisualObject element, ShapeType type, Diagram diagram,
-      List<RangeMath<double>> ranges, [ShapeForm parent = null, String key = "",
-      bool is3D = false, double height = 10.0,  List<RangeMath<double>> textRanges, int value]){
+      [RangeMath<double> rangeA, RangeMath<double> rangeB,
+        ShapeForm parent = null, String key = "",
+        bool is3D = false, double height = 10.0,
+        RangeMath<double> textRange, int value, RangeMath<double> blockRange, RangeMath<double> blockRange2]){
     switch(type){textRanges:
       case ShapeType.simple:
-          if(element.parent.label.name.contains("Group")){
-            return new ShapeText.fromData(diagram, ranges.first, ranges.last,
+          if(element.role == VisualObjectRole.BLOCK || element.role == VisualObjectRole.GROUP){
+            return new ShapeText.fromData(diagram, rangeA, rangeB,
                 parent, key, is3D, height);
           }else{
             var finalDirection = 0;
@@ -28,26 +30,99 @@ abstract class ShapeForm implements Comparable<ShapeForm>{
               }
             }
             //print("$key : $finalDirection");
-            return new ShapeSimple.fromData(diagram, ranges.first, ranges.last,
+            return new ShapeSimple.fromData(diagram, rangeA, rangeB,
                 parent, key, is3D, height, finalDirection);
           }
 
         break;
+      case ShapeType.blockConnection:
+        var finalDirection = 0;
+        if(element.connection != null) {
+          if (element.id == element.connection.segmentOneID) {
+            finalDirection = element.connection.direction;
+          } else {
+            if (element.connection.direction == 1) {
+              finalDirection = 2;
+            } else if (element.connection.direction == 2) {
+              finalDirection = 1;
+            }
+          }
+        }
+        return new ShapeBlockConnection.fromData(diagram, rangeA, rangeB,
+            parent, key, is3D, height, finalDirection);
+        break;
+      case ShapeType.barLabel:
+        var finalDirection = 0;
+        if(element.connection != null) {
+          if (element.id == element.connection.segmentOneID) {
+            finalDirection = element.connection.direction;
+          } else {
+            if (element.connection.direction == 1) {
+              finalDirection = 2;
+            } else if (element.connection.direction == 2) {
+              finalDirection = 1;
+            }
+          }
+        }
+        return new ShapeBarLabel.fromData(diagram, rangeA, rangeB,
+            parent, key, is3D, height, finalDirection);
+        break;
+      case ShapeType.uniqueScaleIndicator:
+        var finalDirection = 0;
+        if(element.connection != null) {
+          if (element.id == element.connection.segmentOneID) {
+            finalDirection = element.connection.direction;
+          } else {
+            if (element.connection.direction == 1) {
+              finalDirection = 2;
+            } else if (element.connection.direction == 2) {
+              finalDirection = 1;
+            }
+          }
+        }
+        return new ShapeUniqueScaleIndicator.fromData(diagram, rangeA, rangeB,
+            parent, key, is3D, height, finalDirection);
+        break;
+      case ShapeType.poincare:
+          return new ShapePoincare.fromData(
+              diagram, rangeA, rangeB,
+              parent, key, is3D, height);
+        break;
       case ShapeType.bezier:
           return new ShapeBezier.fromData(
-              diagram, ranges.first, ranges.last,
+              diagram, rangeA, rangeB,
               parent, key, is3D, height);
         break;
       case ShapeType.line:
         return new ShapeLine.fromData(
-            diagram, ranges.first, ranges.last, textRanges, value, parent, key, is3D, height);
+            diagram, rangeA, rangeB, textRange, value, parent, key, is3D, height);
         break;
+      case ShapeType.heatmap:
+        return new ShapeHeatmap.fromData(
+            diagram, rangeA, rangeB, parent, key, is3D, height);
+        break;
+      case ShapeType.bezier:
+        return new ShapeBezier.fromData(
+            diagram, rangeA, rangeB,
+            parent, key, is3D, height);
+      case ShapeType.edgeBundle:
+        return new ShapeEdgeBundle.fromData(
+            diagram, rangeA, rangeB,
+            parent, key, is3D, height, blockRange, blockRange2);
       default:
         break;
     }
 
     return null;
   }
+
+  ShapeForm._(){
+    if(this.parent == null){
+      this.isDrawable = false;
+    }
+  }
+
+  VisualObject dataElement;
 
   Color polygonBaseColor;
   Color borderBaseColor;
@@ -66,14 +141,16 @@ abstract class ShapeForm implements Comparable<ShapeForm>{
 
   set isDrawable(bool value);
 
+  int direction = 0;
+
   bool pointIsInShape(HomogeneousCoordinate point);
 
   void switchShape(ShapeForm other);
 
-  void modifyGeometry(List<RangeMath<double>> ranges,
-      List<SimpleCircle<HomogeneousCoordinate>> circles,
+  void modifyGeometry(RangeMath<double> a, RangeMath<double> b,
       [ShapeForm parent = null, String key = "",
-      bool is3D = false, double height = 10.0]);
+      bool is3D = false, double height = 10.0,
+      RangeMath<double> textRange, int value, RangeMath<double> blockRange, RangeMath<double> blockRange2]);
 
   ShapeForm getChildByID(String ID);
 

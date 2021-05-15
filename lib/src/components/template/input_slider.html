@@ -1,0 +1,75 @@
+<div class="input-sider"
+     [ngClass]="{horizontalLayout: inputButtonLayout == 'horizontal',
+                 verticalLayout: inputButtonLayout == 'vertical-around',
+                 horizontalHeight: inputButtonLayout == 'horizontal',
+                 verticalHeight: inputButtonLayout == 'vertical-around'}">
+    <div [ngSwitch]="inputButtonLayout">
+        <template ngSwitchCase="horizontal">
+            <material-button [raised]="raisedButton" class="inc-dec-button-horizontal" [disabled]="inputElementDisabled" (click)="decValue($event)">
+                <material-icon  icon="keyboard_arrow_left"></material-icon>
+            </material-button>
+        </template>
+        <template ngSwitchCase="vertical-around">
+            <material-button [raised]="raisedButton" class="inc-dec-button-vertical" [disabled]="inputElementDisabled" (click)="incValue($event)" [ngClass]="{marginBottom: label!=''}">
+                <material-icon  icon="keyboard_arrow_up"></material-icon>
+            </material-button>
+        </template>
+        <template ngSwitchCase="vertical-right">
+            <material-button [raised]="raisedButton" class="inc-dec-button-horizontal" [disabled]="inputElementDisabled" (click)="decValue($event)">
+                <material-icon  icon="keyboard_arrow_up"></material-icon>
+            </material-button>
+        </template>
+    </div>
+
+    <div [ngSwitch]="inputType">
+        <template ngSwitchCase="number">
+            <material-input class="materialInput settingsInput flex-one initial-width"
+                            [error]="errorMsg"
+                            [floatingLabel]="floatingLabel"
+                            [disabled]="inputElementDisabled"
+                            [label]="label"
+                            [(ngModel)]="value"
+                            type="number"
+                            [lowerBound]="minValue"
+                            [upperBound]="maxValue"
+                            (inputKeyPress)="checkError($event)"
+                            (change)="checkError($event)"
+                            [ngClass]="{centered: centered}" ></material-input>
+        </template>
+        <template ngSwitchCase="percent">
+            <material-input class="materialInput settingsInput flex-one initial-width"
+                            [error]="errorMsg"
+                            [floatingLabel]="floatingLabel"
+                            [disabled]="inputElementDisabled"
+                            [label]="label"
+                            [(ngModel)]="value"
+                            type="percent"
+                            [lowerBound]="minValue"
+                            [upperBound]="maxValue"
+                            (inputKeyPress)="checkError($event)"
+                            (change)="checkError($event)"
+                            [ngClass]="{centered: centered}" ></material-input>
+        </template>
+
+    </div>
+
+    <div [ngSwitch]="inputButtonLayout">
+        <template ngSwitchCase="horizontal">
+            <material-button [raised]="raisedButton" class="inc-dec-button-horizontal" [disabled]="inputElementDisabled" (click)="incValue($event)">
+                <material-icon  icon="keyboard_arrow_right"></material-icon>
+            </material-button>
+        </template>
+        <template ngSwitchCase="vertical-around">
+            <material-button [raised]="raisedButton" class="inc-dec-button-vertical" [disabled]="inputElementDisabled" (click)="decValue($event)">
+                <material-icon  icon="keyboard_arrow_down"></material-icon>
+            </material-button>
+        </template>
+        <template ngSwitchCase="vertical-right">
+            <material-button [raised]="raisedButton" class="inc-dec-button-horizontal" [disabled]="inputElementDisabled" (click)="incValue($event)">
+                <material-icon  icon="keyboard_arrow_down"></material-icon>
+            </material-button>
+        </template>
+    </div>
+
+
+</div>

@@ -3,7 +3,6 @@
   "version": "0.0.1",
   "description": "JavaScript dependecies for the project",
   "dependencies": {
-    "@npm-polymer/webcomponentsjs": "^1.0.1",
     "handsontable": "^0.32.0"
   }
 }

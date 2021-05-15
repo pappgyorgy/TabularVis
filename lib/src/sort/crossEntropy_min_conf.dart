@@ -14,10 +14,9 @@ class CrossEntropyMinConf implements SortAlgorithm{
   State solve(State x) {
     var sortStateOne = crossEntropy.solve(x);
     //print("Cross entropy min conflict - after state one: ${sortStateOne.getValue()}");
-    var fullState = sortStateOne.clone();
-    var sortStateFinal = minConflicts.solve(fullState);
+
+    var sortStateFinal = minConflicts.solve(x);
     if(sortStateOne.getValue() < sortStateFinal.getValue()){
-      (sortStateOne as DiagramStateFullWithoutCopy).finalize();
       return sortStateOne;
     }else{
       return sortStateFinal;

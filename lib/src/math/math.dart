@@ -1,7 +1,7 @@
 library poincareMath;
 
 import "package:vector_math/vector_math.dart";
-import 'package:three/three.dart' show Color;
+import '../graphic/render.dart' show Color;
 import "dart:math";
 
 part "math_lib_homogen.dart";
@@ -21,14 +21,19 @@ part "number_range.dart";
 
 class MathFunc{
 
-  static double PITwice = 2*PI;
+  static double PITwice = 2*pi;
+  static double PIHalf = 2*pi;
+  static double onePerPI = 2*pi;
+
+  static double roundToZero = pow(10, -10);
+  static double roundToOne = (1 - pow(10, -10));
 
   static Vector3 vector2ToVector3(Vector2 vector, double zValue){
     return new Vector3(vector.x, vector.y, zValue);
   }
 
   static double getInverseLn(double num){
-    return pow(E, -num).toDouble();
+    return pow(e, -num).toDouble();
   }
 
   static Vector2 vector3ToVector2(Vector3 vector){
@@ -164,4 +169,12 @@ class MathFunc{
     return expBase * maxValue + min;
   }
 
+  static double getRangeLength(double a, double b){
+    return (1 - (1 - ((b - a) / pi).abs()).abs()) * pi;
+  }
+
+  static double getMidRange(double a, double b){
+    var length = getRangeLength(a, b);
+    return b - (1 - (b-a) / pi).sign * (length / 2);
+  }
 }

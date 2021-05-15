@@ -1,0 +1,233 @@
+@import 'package:angular_components/css/material/material';
+@import 'package:angular_components/material_button/mixins';
+@import 'package:angular_components/material_icon/mixins';
+@import 'package:angular_components/app_layout/mixins';
+@import 'package:angular_components/material_dialog/mixins';
+@import 'package:angular_components/material_toggle/mixins';
+
+$main-sidebar-width: 80px;
+$secondary-sidebar-width: 300px;
+
+.initial-width{
+  width: initial !important;
+}
+
+.margin-around{
+  margin: 10px;
+}
+
+.flex-one{
+  flex: 1;
+}
+
+.flex{
+  display: flex;
+}
+
+.vertical-layout{
+  display: flex;
+  flex-direction: column;
+}
+
+.horizontal-layout{
+  display: flex;
+  flex-direction: row;
+}
+
+.flex-content-right-layout{
+  justify-content: flex-end;
+}
+
+.centered-layout{
+  justify-content: center;
+}
+
+.positioned-to-right{
+  justify-content: flex-end;
+}
+
+.full-width{
+  width: 100%;
+}
+
+.full-height{
+  height: 100%;
+}
+
+.reducedHeight100{
+  height: calc(100% - 100px);
+}
+
+.enableOverflow{
+  height: 100%;
+  overflow: auto;
+}
+
+.text_white{
+  color: white !important;
+}
+
+
+.fit-content{
+  width: 100%;
+  height: 100%;
+  position: absolute;
+}
+
+.material-header{
+  background-color: var(--primary-color) !important;
+  z-index: 15 !important;
+}
+
+.main-sidebar{
+  color: white;
+  background-color: var(--primary-color) !important;
+  width: $main-sidebar-width !important;
+  z-index: 5 !important;
+  box-shadow: 0 4px 5px 0 rgba(0, 0, 0, 0.14), 0 1px 10px 0 rgba(0, 0, 0, 0.12), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+}
+
+.main-sidebar.mat-drawer-collapsed{
+  left: -$main-sidebar-width !important;
+}
+
+.main-sidebar-content{
+  margin-left: $main-sidebar-width !important;
+}
+
+.main-sidebar-content.matDrawerCollapsed {
+  margin-left: 0 !important;
+}
+
+.secondary-sidebar{
+  color: white;
+  background-color: var(--primary-color) !important;
+  width: $secondary-sidebar-width !important;
+  box-shadow: 0 4px 5px 0 rgba(0, 0, 0, 0.14), 0 1px 10px 0 rgba(0, 0, 0, 0.12), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+}
+
+.secondary-sidebar.mat-drawer-collapsed{
+  left: -$secondary-sidebar-width !important;
+}
+
+.secondary-sidebar-content{
+  margin-left: $secondary-sidebar-width !important;
+  width: calc(100% - 300px) !important;
+}
+
+.secondary-sidebar-content.matDrawerCollapsed {
+  margin-left: 0 !important;
+  width: calc(100% - 80px) !important;
+}
+
+.hidden-overflow{
+  overflow: hidden;
+}
+
+.sideBarButton{
+  width: 40px;
+  left: 20px;
+}
+
+.sideBarIcon{
+  @include material-icon-size(24px);
+}
+
+.input-inc-dec-button-horizontal{
+  height: 45px;
+  width: 35px;
+  min-width: 35px!important;
+  top: 3px;
+  margin: 0 !important;
+  ::ng-deep {
+    .content{
+      padding: 11px 0 0 0 !important;
+    }
+  }
+}
+
+.toggles{
+  ::ng-deep {
+    .tgl-bar  {
+      background-color: grey;
+    }
+  }
+
+  ::ng-deep {
+    .material-toggle.checked:not(.disabled) {
+      .tgl-btn,
+      .tgl-bar {
+        background-color: #03a9f4 !important;
+      }
+    }
+  }
+
+  ::ng-deep {
+    .material-toggle.disabled {
+      .tgl-bar {
+        background-color: black !important;
+      }
+    }
+  }
+}
+
+material-input{
+  @include button-color(".label-text", white);
+  @include button-background-color(".unfocused-underline", white);
+  ::ng-deep {
+    .label-text {
+      &:not(.focused):not(.disabled) {
+        color: white !important;
+      }
+    }
+  }
+  @include button-background-color(".disabled-underline", grey);
+  ::ng-deep {
+    .input.disabledInput,
+    .label-text.disabled {
+      color: grey;
+    }
+  }
+}
+
+.space-between{
+  justify-content: space-between;
+  margin: 10px 0 10px 0;
+}
+
+.radioButtonContainer{
+  ::ng-deep{
+    .icon-container:not(.checked){
+      color: white !important;
+    }
+
+    .disabled {
+      .content {
+        color: grey !important;
+      }
+    }
+
+    .icon-container.disabled{
+      .icon {
+        color: grey !important;
+      }
+    }
+  }
+}
+
+.material-list{
+
+  :not(.multiselect).selected{
+    background: none !important;
+  }
+
+  ::ng-deep{
+    .selected-accent{
+      width: 0px!important;
+      border-bottom: 20px solid transparent;
+      border-left: 20px solid #03a9f4!important;
+      border-top: 20px solid transparent;
+      background: transparent !important;
+    }
+  }
+}

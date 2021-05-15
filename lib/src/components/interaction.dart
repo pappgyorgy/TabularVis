@@ -1,5 +1,5 @@
-import 'package:three/three.dart' show Color;
-export 'package:three/three.dart' show Color;
+import '../graphic/render.dart' show Color;
+export '../graphic/render.dart' show Color;
 
 import 'dart:math';
 import '../math/math.dart';

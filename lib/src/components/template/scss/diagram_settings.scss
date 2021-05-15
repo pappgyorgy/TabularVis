@@ -1,0 +1,80 @@
+@import 'package:angular_components/css/material/material';
+@import 'package:angular_components/material_tab/mixins';
+@import 'package:angular_components/material_list/mixins';
+@import 'package:angular_components/material_expansionpanel/mixins';
+
+:host{
+  color: white;
+}
+
+.max-height-dialog{
+  max-height: 620px;
+  min-width: 480px;
+  height: 620px;
+
+  [footer] {
+    padding-top: 5px;
+  }
+  color: white;
+}
+
+.primary-background{
+  background-color: var(--primary-color) !important;
+}
+
+.min-height-list{
+  min-height: 400px;
+}
+
+.ticks-config-button[disabled]{
+  color: grey !important;
+
+  material-icon{
+    color: grey !important;
+  }
+}
+
+.greyColor{
+  color: grey !important;
+}
+
+@include tab-strip-tab-color('material-tab-panel', white);
+
+@include tab-strip-selected-tab-color('material-tab-panel', var(--secondary-color));
+
+@include flat-material-list();
+
+@include expansionpanel-colors(var(--primary-color), white);
+
+@include expansionpanel-focused-colors(var(--secondary-color), black);
+
+.ticks-value-list-item{
+  margin-top: 10px;
+  box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 3px 1px -2px rgba(0, 0, 0, 0.12), 0 1px 5px 0 rgba(0, 0, 0, 0.2);
+}
+
+.padding-left-20{
+  padding-left: 20px;
+}
+
+.expansion-panel{
+  ::ng-deep #{$_panel}.open {
+    background: none !important;
+  }
+
+  @include expansionpanel-no-content-margin();
+
+  ::ng-deep .panel .content-wrapper .content {
+    padding: 10px;
+  }
+}
+
+.block-name-scaling{
+  flex: 1;
+  margin: auto;
+  padding-left: 15px;
+}
+
+.box-shadow-for-element{
+  box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 3px 1px -2px rgba(0, 0, 0, 0.12), 0 1px 5px 0 rgba(0, 0, 0, 0.2);
+}

@@ -43,6 +43,11 @@ abstract class RangeMath<T> implements Comparable<T>{
   List<RangeMath<T>> dividePartsByValue(List<T> values,
     {List<T> spaceBetweenParts, bool differentSpaces, T defaultSpaceBetweenParts});
 
+  List<RangeMath<T>> dividePartsByValueInside(List<T> values,
+      {List<T> spaceBetweenParts,
+        bool differentSpaces: false,
+        T defaultSpaceBetweenParts: null});
+
   static bool isRangesDisjoint(RangeMath one, RangeMath Two){
     if((one.isValueInRange(Two.begin) || one.isValueInRange(Two.end))
     || (Two.isValueInRange(one.begin) || Two.isValueInRange(one.end)))

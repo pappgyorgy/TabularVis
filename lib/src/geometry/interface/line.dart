@@ -5,18 +5,24 @@ enum DivideType{
 }
 
 enum LineType{
-  simple, bezier
+  simple, poincare, bezier, bezierExt
 }
 
 abstract class LineGeom<T extends double, F extends HomogeneousCoordinate<dynamic>>{
 
-  factory LineGeom(LineType type, Diagram diagram, SimpleCircle<F> circle, RangeMath<T> range){
+  factory LineGeom(LineType type, Diagram diagram, SimpleCircle<F> circle, RangeMath<T> range, [F pointOne, F pointTwo, double blockMiddle, double blockMiddle2, double connMiddleA, double connMiddleB, bool secondary]){
     switch(type){
       case LineType.simple:
           return new LineSimple(range, circle, diagram);
         break;
+      case LineType.poincare:
+          return new LinePoincare(range, circle, pointOne, pointTwo, diagram);
+        break;
       case LineType.bezier:
         return new LineBezier(range, circle, diagram);
+        break;
+      case LineType.bezierExt:
+        return new LineBezierExt(range, circle, diagram, blockMiddle, blockMiddle2, connMiddleA, connMiddleB, secondary);
         break;
       default:
           throw new StateError("This LineType: $type not exists");

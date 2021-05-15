@@ -24,7 +24,9 @@ class SegmentLine<T extends Vector> implements SegmentMath<T>{
 
 
   SegmentLine.fromTwoHPoint(this.begin, this.end, {HomogeneousCoordinate planeNormal}){
-    this._arguments = begin.crossProduct([end]).coordinate.storage;
+    var helper = new List<HomogeneousCoordinate>();
+    helper.add(this.end);
+    this._arguments = begin.crossProduct(helper).coordinate.storage;
     this._setPlaneNormal(planeNormal);
   }
 
@@ -34,7 +36,7 @@ class SegmentLine<T extends Vector> implements SegmentMath<T>{
 
   @deprecated
   SegmentLine.fromTwoPointVector(Vector2 pointOne, Vector2 pointTwo, {HomogeneousCoordinate planeNormal}){
-    var difference = pointTwo.clone().sub(pointOne);
+    var difference = pointTwo - pointOne;
     double m, b;
     if (difference.x != 0) {
       m = difference.y / difference.x;
@@ -59,9 +61,9 @@ class SegmentLine<T extends Vector> implements SegmentMath<T>{
 
   List<double> getLineYEquation() {
     if(this._arguments[1] != 0) {
-      return [-(_arguments[0] / _arguments[1]), (-_arguments[2] / _arguments[1])];
+      return [-(_arguments[0] / _arguments[1]), (-(this._arguments[2]) / _arguments[1])];
     }else{
-      return [-(_arguments[0]), (-_arguments[2])];
+      return [-(_arguments[0]), -(_arguments[2])];
     }
   }
 
@@ -177,7 +179,7 @@ class SegmentLine<T extends Vector> implements SegmentMath<T>{
         new Vector3.array(this._planeNormal.getDescartesCoordinate().storage)
     );
 
-    var newPoint = new Vector2(pointDesc.storage[0], pointDesc.storage[1]).add(newPerpendicularLineDirectionVector.xy);
+    var newPoint = new Vector2(pointDesc.storage[0], pointDesc.storage[1]) + (newPerpendicularLineDirectionVector.xy);
     var pointTwo = new HomogeneousCoordinate<Vector2>(CoordinateType.twoDim, newPoint.x, newPoint.y);
 
     return new SegmentLine.fromTwoHPoint(point, pointTwo, planeNormal: this._planeNormal);

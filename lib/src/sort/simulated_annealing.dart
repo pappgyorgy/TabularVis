@@ -8,50 +8,24 @@ class SimulatedAnnealing implements SortAlgorithm{
   double acceptance_ratio = 0.8;
   double preHeatTemperature = 0.0;
   double actualAcceptanceRatio = 0.0;
+  double onePerNumber_of_step_per_temp;
 
-  State getRandomState(State x){
+  State getNewElement(State currentState, double actualTemperature, Random rnd) {
 
-    State helper = x.copy();
-    State helper2 = x.copy();
-
-    var helperIndexList = new List.generate(helper.order.length, (int index){return index+1;});
-    helperIndexList.shuffle(new Random(new DateTime.now().millisecondsSinceEpoch));
-    int i = 0;
-    for(int newIndex in helperIndexList){
-      helper.order[i].label.index = newIndex;
-      helper.orderIndexHelper[newIndex] = i;
-      i++;
-    }
-
-    for(SortConnection conn in helper.listOfConnections){
-      int alma = 0;
-      //conn.updateIndex();
-      alma = 0;
-    }
-
-    helper.calculate();
-
-    return helper2..changeStateByOrder(helper.order);
-  }
-
-  State getNewElement(State x, double actualTemperature) {
-    State currentState = x;
-    int min = 0;
-    if(x.getValue() == 0){
-      return x;
-    }
-    currentState.chooseNeighbour(new Random().nextInt(x.numberOfNeighbours()));
-    //currentState.chooseRandomState();
-    //currentState = getRandomState(x);
-    int difference = currentState.getValue() - x.getValue();
-
-    if(difference < 0){
+    int actValue = currentState.numberOfIntersection;
+    if(currentState.numberOfIntersection == 0){
+      currentState.save();
       return currentState;
-    }else if(new Random().nextDouble() < exp(difference/actualTemperature)){
-      return currentState;
-    }else{
-      return x;
     }
+
+    currentState.chooseNeighbourAndDecideToKeepByFunc(
+        rnd.nextInt(currentState.numberOfNeighbours()-1) + 1,
+        functionToDecide: (int numberOfIntersection){
+          int difference = numberOfIntersection - actValue;
+          return (difference < 0) || (rnd.nextDouble() < exp((-((difference).abs()))/actualTemperature));
+        },
+        enablePreCalculate: false
+    );
 
     return currentState;
   }
@@ -60,64 +34,122 @@ class SimulatedAnnealing implements SortAlgorithm{
     return currentTemperature * 0.85;
   }
 
-  State preheatTest(State x){
+  int preheatTest2(State x){
     State currentState = x;
-    State bestState = x.clone();
-    int min = 0;
+    int actualBestStateValue = x.getValue();
     if(x.getValue() == 0){
-      return x;
+      return 0;
     }
 
+    bool saveRandomGenValue = false;
     int accepted = 0;
 
     for(var i = 0; i < this.number_of_step_per_temp; i++) {
 
-      currentState.chooseRandomState();
-      int difference = currentState.getValue() - bestState.getValue();
+      currentState.chooseRandomState(setFinalOrder: false);
+      int difference = currentState.numberOfIntersection - actualBestStateValue;
+      int difference2 = currentState.bestNeighbourIndex > 1 ? currentState.neighboursValues[currentState.bestNeighbourIndex] - actualBestStateValue : 99999999999;
 
-      if(difference < 0) {
-        if (currentState.getValue() < bestState.getValue()) {
-          bestState = currentState.save().clone();
-        }
-      }
+      var randomValue = new Random().nextDouble();
+      var acceptance = exp((-(min(difference, difference2).abs()))/this.preHeatTemperature);
 
-      if(new Random().nextDouble() < exp(-difference.abs()/this.preHeatTemperature)) {
-        accepted++;
-        if (currentState.getValue() < bestState.getValue()) {
-          bestState = currentState.save().clone();
+      saveRandomGenValue = (difference < 0 || difference2 < 0) || (randomValue < acceptance);
+
+      accepted += (!(difference < 0 || difference2 < 0) && (randomValue < acceptance)) ? 1 : 0;
+
+      if(saveRandomGenValue){
+        if(difference2 < difference){
+
+          currentState.chooseNeighbourIntoTemp(currentState.bestNeighbourIndex, enablePreCalculate: false);
+          actualBestStateValue = currentState.numberOfIntersection;
+          difference = difference2;
+
+        } else {
+
+          actualBestStateValue = currentState.numberOfIntersection;
+          currentState.saveTemp();
+
         }
       }
     }
 
     this.actualAcceptanceRatio = accepted / this.number_of_step_per_temp;
 
-    return bestState;
+    return actualBestStateValue;
   }
 
-  State sequenceAll(State x) {
-    State currentState = x;
+  int preheatTest(State currentState){
+    int actualBestStateValue = currentState.numberOfIntersection;
+    if(currentState.numberOfIntersection == 0){
+      currentState.save();
+      return 0;
+    }
+
+    int accepted = 0;
+    double acceptance = 0.0, acceptanceTest = 0.0;
+    Random rnd = new Random(new DateTime.now().millisecondsSinceEpoch);
+    for(var i = 0; i < this.number_of_step_per_temp; i++) {
+
+      currentState.chooseRandomState(setFinalOrder: false, enablePreCalculation: false);
+      int difference = currentState.numberOfIntersection - actualBestStateValue;
+      acceptance = exp((-(difference).abs())/this.preHeatTemperature);
+
+      //Ez akkor lesz negatív ha a randomvalue kisebb mint az acceptance;
+      acceptanceTest = rnd.nextDouble() - acceptance;
+
+      // diff- és acc- => minus | diff- miatt elfogadjuk
+      // diff+ és acc- => minus | acc- miatt elfogadjuk
+      // diff+ és acc+ => plus  | nem fogadjuk el
+      // diff- és acc+ => minus | diff- miatt elfogadjuk
+
+      accepted += ((-acceptanceTest).sign + 1) ~/ 2;
+
+      if(acceptance * difference < 0){
+        actualBestStateValue = currentState.numberOfIntersection;
+        currentState.saveTemp();
+      }
+
+      this.actualAcceptanceRatio = accepted * this.onePerNumber_of_step_per_temp;
+    }
+
+    return actualBestStateValue;
+  }
+
+  State sequenceAll(State currentState) {
+    this.onePerNumber_of_step_per_temp = 1.0 / this.number_of_step_per_temp;
     int iterationIndex = 1;
-    int bestValue = x.getValue();
-    State bestState = x.clone();
+    int bestValue = currentState.getValue();
+    //State bestState = x.clone();
     int numberOfRandomJump = 5;
     int randomJumpIndex = 0;
     double initTemp = 100.0;
     this.preHeatTemperature = initTemp;
     double currentTemperature = initTemp;
 
-    int previousBestValue = bestState.getValue();
+    int previousBestValue = currentState.getValue();
+    int actualBestValue = currentState.getValue();
     int sameSince = 0;
-    bool sameSinceFirst = true;
+    bool thirdPreHeat = false;
 
-    int preHeatRuns = 0;
+    int preHeatRuns = 0, accepted = 0;
+    int bestValueFromPreheatIteration = 0;
+    double acceptance = 0.0;
+    Random rnd = new Random(new DateTime.now().millisecondsSinceEpoch);
     do{
 
       this.preHeatTemperature *= 1.15;
 
-      currentState = preheatTest(currentState);
+      if(currentState.getValue() == 0){
+        print("value was 0");
+        return currentState;
+      }
 
-      if (currentState.getValue() < bestState.getValue()) {
-        bestState = currentState.save().clone();
+      bestValueFromPreheatIteration = preheatTest(currentState);
+
+      //We decide this in the preheat test, when we will change neighbour or here when we permanently change neighbour
+      if (bestValueFromPreheatIteration < actualBestValue) {
+        currentState.save();
+        actualBestValue = currentState.getValue();
       }
 
       preHeatRuns++;
@@ -126,58 +158,64 @@ class SimulatedAnnealing implements SortAlgorithm{
 
     currentTemperature = this.preHeatTemperature;
 
+    //currentState.updateFromFinalOrder();
+
     do {
 
       for(var i = 0; i < this.number_of_step_per_temp; i++) {
-        currentState = getNewElement(currentState, currentTemperature);
+        getNewElement(currentState, currentTemperature, rnd);
 
-
-        if (currentState.getValue() < bestState.getValue()) {
-          bestState = currentState.save().clone();
+        if (currentState.numberOfIntersection < actualBestValue) {
+          currentState.save();
+          previousBestValue = actualBestValue;
+          actualBestValue = currentState.getValue();
+          sameSince = 0;
         }
 
       }
 
-      currentTemperature = updateTemperature(currentTemperature, (1 - iterationIndex/max_number_step));
+      currentTemperature *= 0.85;
 
       iterationIndex++;
 
-      if(previousBestValue == bestState.getValue()){
-        sameSince++;
-        if(sameSince > 6){
-          if(sameSinceFirst){
-            preHeatRuns = 0;
-            sameSinceFirst = false;
-            sameSince = 0;
-            do{
+      //Ha a kettő egynlő akkor a különbségük nulla, ezért azt az alábbiak szerint konvertálva pont akkor kapunk egyet ha egyenlőek
+      sameSince += (1 - (previousBestValue - actualBestValue).abs().sign);
 
-              this.preHeatTemperature *= 1.15;
+      if(sameSince == 6){
 
-              currentState = preheatTest(currentState);
+        if(thirdPreHeat) break;
 
-              if (currentState.getValue() < bestState.getValue()) {
-                bestState = currentState.save().clone();
-              }
+        do{
 
-              preHeatRuns++;
+          this.preHeatTemperature *= 1.15;
 
-            }while(this.actualAcceptanceRatio < this.acceptance_ratio && preHeatRuns < 100);
-
-            currentTemperature = this.preHeatTemperature;
-          }else{
-            break;
+          if(currentState.getValue() == 0){
+            print("value was 0");
+            return currentState;
           }
-        }
-      }else{
-        previousBestValue = bestState.getValue();
+
+          bestValueFromPreheatIteration = preheatTest(currentState);
+
+          //We decide this in the preheat test, when we will change neighbour or here when we permanently change neighbour
+          if (bestValueFromPreheatIteration < actualBestValue) {
+            currentState.save();
+            actualBestValue = currentState.getValue();
+          }
+
+          preHeatRuns++;
+
+        }while(this.actualAcceptanceRatio < this.acceptance_ratio && preHeatRuns < 100);
+
+        currentTemperature = this.preHeatTemperature;
+
         sameSince = 0;
+        thirdPreHeat = true;
       }
 
-      //print("${iterationIndex} - ${bestState.getValue()} - ${currentTemperature}");
-    } while (bestState.getValue() > 0 && (iterationIndex < max_number_step));
+    } while (actualBestValue > 0 && (iterationIndex < max_number_step));
 
-    bestState.finalize();
-    return bestState;
+    currentState.updateFromFinalOrder();
+    return currentState;
   }
 
 

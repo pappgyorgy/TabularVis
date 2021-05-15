@@ -1,0 +1,56 @@
+<div popupSource #source="popupSource">
+<section *ngIf="!iconButton">
+<material-button class="color-input-toggle-button" #colorSelectorTriggerButton
+                [ngClass]="{spaceBetween: flexLabel,
+                    centeredLayout: centered,
+                    vertical: labelLayout=='vertical',
+                    horizontal: labelLayout=='horizontal'}"
+                 (trigger)="colorPickerVisibility = !colorPickerVisibility"
+                [disabled]="disabled">
+
+        <section *ngIf="labelPosition=='start'">
+            <span>{{label}}</span>
+        </section>
+
+        <material-icon [style.color]="getColorString()" [ngClass]="{marginAround: labelLayout=='horizontal'}" class="sideBarIcon" icon="format_color_fill"></material-icon>
+
+        <section *ngIf="labelPosition=='end'">
+            <span>{{label}}</span>
+        </section>
+
+</material-button>
+</section>
+<section *ngIf="iconButton">
+    <material-button icon class="color-input-toggle-button" #colorSelectorTriggerButton
+                    [ngClass]="{spaceBetween: flexLabel,
+                    centeredLayout: centered,
+                    vertical: labelLayout=='vertical',
+                    horizontal: labelLayout=='horizontal'}"
+                    (trigger)="colorPickerVisibility = !colorPickerVisibility"
+                    [disabled]="disabled">
+
+        <section *ngIf="labelPosition=='start'">
+            <span>{{label}}</span>
+        </section>
+
+        <material-icon [style.color]="getColorString()" [ngClass]="{marginAround: labelLayout=='horizontal'}" class="sideBarIcon" icon="format_color_fill"></material-icon>
+
+        <section *ngIf="labelPosition=='end'">
+            <span>{{label}}</span>
+        </section>
+
+    </material-button>
+</section>
+</div>
+<material-popup class="colorPickerContainer"
+                #colorPickerContainer
+                [source]="source"
+                [(visible)]="colorPickerVisibility">
+    <div #popupMainSection id="popupMainContainer">
+    </div>
+    <div footer class="horizontal-layout flex-content-right-layout margin-top">
+        <div class="buttons">
+            <material-button raised (click)="applySelectedColor($event)">Apply</material-button>
+        </div>
+    </div>
+</material-popup>

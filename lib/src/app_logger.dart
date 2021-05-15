@@ -1,5 +1,6 @@
-import 'package:angular2/core.dart';
+import 'package:angular/core.dart';
 import 'package:logging/logging.dart';
+export 'package:logging/logging.dart';
 
 @Injectable()
 class AppLogger{
@@ -11,6 +12,11 @@ class AppLogger{
     Logger.root.onRecord.listen((LogRecord rec) {
       print('${rec.level.name}: ${rec.time}: ${rec.message}');
     });
+  }
+
+  log(Level logLevel, message,
+      [Object error, StackTrace stackTrace]){
+    this.sender.log(logLevel, message, error, stackTrace);
   }
 
 }

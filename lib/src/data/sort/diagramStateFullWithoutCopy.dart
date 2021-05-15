@@ -7,7 +7,7 @@ class DiagramStateFullWithoutCopy extends State{
   Map<String, Map<int, int>> orderIndexHelperTemp = new Map<String, Map<int, int>>();
   Map<String, Map<int, int>> orderIndexHelperFinal = new Map<String, Map<int, int>>();
 
-  int finalOrderValue = 99999999999999999;
+  int finalOrderValue = double.maxFinite.toInt();
 
   DiagramStateFullWithoutCopy(SortDataSearchAlgorithm diagramElements) : super._(diagramElements){
     listOfConnections = new List<SortConnection>();
@@ -174,12 +174,13 @@ class DiagramStateFullWithoutCopy extends State{
 
   void calculate() {
     numberOfIntersection = 0;
-    for (int i = 0; i < listOfConnections.length; i++) {
-      for (int j = i; j < listOfConnections.length; j++) {
-        if(listOfConnections[i] == listOfConnections[j]){continue;}
-        if(listOfConnections[i].isConnectionCollide(listOfConnections[j])){
+    for (int i = 0; i < listOfConnections.length-1; i++) {
+      for (int j = i+1; j < listOfConnections.length; j++) {
+        //if(listOfConnections[i] == listOfConnections[j]){continue;}
+        /*if(listOfConnections[i].isConnectionCollide(listOfConnections[j])){
           numberOfIntersection++;
-        }
+        }*/
+        this.numberOfIntersection += listOfConnections[i].intersectionTest(listOfConnections[j]);
       }
     }
     //numberOfIntersection = numberOfIntersection / 2;
@@ -252,7 +253,7 @@ class DiagramStateFullWithoutCopy extends State{
     }
   }
 
-  void chooseNeighbour(int neighbour, [bool isPermanent = false]) {
+  void chooseNeighbour(int neighbour, {bool isPermanent = false, bool enablePreCalculate = false, int startRange = 1, int endRange = -1}){
     //Find out which connections you need to move and where
     // N = Number of groups = order.length
     // M = groups elements = order[i].length
@@ -512,7 +513,7 @@ class DiagramStateFullWithoutCopy extends State{
     return this;
   }
 
-  int diffNeighbour(int neighbour) {
+  int diffNeighbour(int neighbour, {bool isPermanent = false, bool enablePreCalculate = false, int startRange = 1, int endRange = -1}) {
     this.chooseNeighbour(neighbour);
     return this.getValue() - this.finalOrderValue;
   }
@@ -564,7 +565,7 @@ class DiagramStateFullWithoutCopy extends State{
   }
 
 
-  State chooseRandomState(){
+  State chooseRandomState({bool setFinalOrder = true, bool enablePreCalculation = false, bool enableHelper = false}){
 
     this.orderIndexHelperFinal.forEach((String key, Map<int, int> indexList){
 
@@ -616,7 +617,7 @@ class DiagramStateFullWithoutCopy extends State{
   }
 
   @override
-  void changeStateByOrder(List<VisualObject> newOrder) {
+  void changeStateByOrder(dynamic newOrder) {
     this.order;
 
     for(var i = 0; i < newOrder.length; i++) {
@@ -696,7 +697,7 @@ class DiagramStateFullWithoutCopy extends State{
   }
 
   @override
-  int diffNeighbourByOrder(List<VisualObject> order) {
+  int diffNeighbourByOrder(List<dynamic> order) {
     // TODO: implement diffNeighbourByOrder
   }
 

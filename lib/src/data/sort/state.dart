@@ -18,36 +18,54 @@ abstract class State{
   List<VisualObject> order;
   Map<int, int> orderIndexHelper;
 
+  List<int> groupChildrenNumber;
+  int get bestNeighbourIndex => 1;
+
   State();
 
   factory State.getState(SortAlgorithmType type, VisualObject order){
     SortDataSearchAlgorithm sortData = new SortDataSearchAlgorithm(order);
-    switch(type){
+    return new StateVisObjConnectionMod(sortData);
+    /*switch(type){
       case SortAlgorithmType.hillClimb:
-          return new DiagramStateFullWithoutCopy.simple(sortData);
+        return new StateVisObjConnection(sortData);
+        //return new DiagramStateMatrix.simple(sortData);
+        //return new DiagramStateFullWithoutCopy.simple(sortData);
         break;
       case SortAlgorithmType.minConf:
-          return new DiagramStateFullWithoutCopy.simple(sortData);
+        return new StateVisObjConnection(sortData);
+        //return new DiagramStateMatrix.simple(sortData);
+          //return new DiagramStateFullWithoutCopy.simple(sortData);
         break;
       case SortAlgorithmType.crossEntropy:
-          return new DiagramStateFullWithoutCopy.simple(sortData);
+        return new StateVisObjConnection(sortData);
+        //return new DiagramStateMatrix.simple(sortData);
+          //return new DiagramStateFullWithoutCopy.simple(sortData);
         break;
       case SortAlgorithmType.crossEntropyMinConf:
-          return new DiagramStateFullWithoutCopy.simple(sortData);
+        return new StateVisObjConnection(sortData);
+        //return new DiagramStateMatrix.simple(sortData);
+          //return new DiagramStateFullWithoutCopy.simple(sortData);
         break;
       case SortAlgorithmType.crossEntropyMod:
-        return new DiagramStateFullWithoutCopy.simple(sortData);
+        return new StateVisObjConnection(sortData);
+        //return new DiagramStateMatrix.simple(sortData);
+        //return new DiagramStateFullWithoutCopy.simple(sortData);
         break;
       case SortAlgorithmType.simulatedAnnealing:
-        return new DiagramStateFullWithoutCopy.simple(sortData);
+        return new StateVisObjConnection(sortData);
+        //return new DiagramStateMatrix.simple(sortData);
+        //return new DiagramStateFullWithoutCopy.simple(sortData);
         break;
       case SortAlgorithmType.beesAlgorithm:
-        return new DiagramStateFullWithoutCopy.simple(sortData);
+        return new StateVisObjConnection(sortData);
+        //return new DiagramStateMatrix.simple(sortData);
+        //return new DiagramStateFullWithoutCopy.simple(sortData);
         break;
       default:
         throw new StateError("Wrong sort algorithm type");
     }
-    return null;
+    return null;*/
   }
 
   factory State.copyState(SortAlgorithmType type, State stateToCopy){
@@ -103,9 +121,9 @@ abstract class State{
 
   int numberOfNeighbours([VisualObject object]);
 
-  void chooseNeighbour(int neighbour);
+  void chooseNeighbour(int neighbour, {bool isPermanent = false, bool enablePreCalculate = false, int startRange = 1, int endRange = -1});
 
-  void changeStateByOrder(List<VisualObject> order);
+  void changeStateByOrder(dynamic order);
 
   void clean();
 
@@ -180,9 +198,9 @@ abstract class State{
 
   int getElementIndexByID(String groupID, [String segmentID = ""]);
 
-  int diffNeighbour(int neighbour);
+  int diffNeighbour(int neighbour, {bool isPermanent = false, bool enablePreCalculate = true, int startRange = 1, int endRange = -1});
 
-  int diffNeighbourByOrder(List<VisualObject> order);
+  int diffNeighbourByOrder(List<dynamic> order);
 
   String get groupsOrders{
     StringBuffer sb = new StringBuffer();
@@ -225,12 +243,36 @@ abstract class State{
 
   List<String> get orderPos;
 
+  List<int> neighboursValues;
+
+  int numberOfGroupsAndBlocks = 0;
+
+  int numberOfBlocks = 0;
+
+  bool allGroupsOneBlock = true;
+
   State save();
+
+  State saveTemp(){}
 
   State finalize();
 
   State updateFromFinalOrder();
 
-  State chooseRandomState();
+  State updateFromTempOrder(){}
+
+  State finalizeFromTempOrder(){}
+
+  void propagateTempToFinal(){}
+
+  State chooseRandomState({bool setFinalOrder = true, bool enablePreCalculation = false, bool enableHelper = false});
+
+  List<int> maxConflictConnection() => this.maxConflictNeighbour();
+
+  bool chooseNeighbourAndDecideToKeepByFunc(int neighbour, {Function functionToDecide = null, bool enablePreCalculate = true, int startRange = 1, int endRange = -1}) {}
+
+  int chooseNeighbourIntoTemp(int neighbour, {bool enablePreCalculate = false}){}
+
+  void copySavedStateIntoAnother(State other, [bool finalState = false]){}
 
 }

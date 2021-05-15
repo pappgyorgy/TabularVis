@@ -1,13 +1,15 @@
 
-\.idea/libraries/
+.idea/libraries/Dart_Packages.xml
 
-\.idea/
+.idea/libraries/
 
-\.packages
+.idea/
 
-\.pub
+.packages
 
-\web/components/node_modules
+.pub
 
-\build
-pubspec\.lock
+web/components/node_modules
+
+build
+pubspec.lock

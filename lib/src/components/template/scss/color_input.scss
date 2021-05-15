@@ -1,0 +1,113 @@
+@import 'package:angular_components/material_popup/mixins';
+
+#popupMainContainer{
+
+  ::ng-deep {
+    .color-picker {
+      display: flex;
+      width: 340px;
+      padding: 0;
+
+      .color-picker-info-box {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        margin-left: 10px;
+        width: 58px;
+      }
+
+      .color-picker-preview-previous,
+      .color-picker-preview-current{
+        height: 35px;
+      }
+
+      .entry-control-base{
+        display: flex;
+        justify-content: space-between;
+        margin-top: 5px;
+      }
+
+      .entry-control-base-name{
+        margin: 2px 3px 0 0;
+      }
+
+      .entry-control-base-value{
+        width: 30px;
+
+      }
+    }
+  }
+}
+
+.margin-top{
+  margin-top: 10px;
+}
+
+.colorPickerContainer{
+  @include material-popup-style {
+    padding: 10px;
+    background-color: #0E1F2B;
+    color: white;
+  }
+
+}
+
+.color-input-toggle-button{
+  text-transform: none;
+  width: 100%;
+  margin: 0;
+  padding-left: 0;
+  padding-right: 0;
+
+  display: flex;
+
+  ::ng-deep {
+    .content {
+      flex: 1;
+    }
+  }
+}
+
+.color-input-toggle-button.vertical{
+  ::ng-deep {
+    .content {
+      flex-direction: column;
+    }
+  }
+}
+
+.color-input-toggle-button.horizontal{
+  ::ng-deep {
+    .content {
+      flex-direction: row;
+    }
+  }
+}
+
+.color-input-toggle-button[disabled]{
+  color: grey !important;
+
+  material-icon{
+    color: grey !important;
+  }
+}
+
+.centeredLayout{
+  ::ng-deep {
+    .content {
+      justify-content: center;
+    }
+  }
+}
+
+.spaceBetween{
+  ::ng-deep {
+    .content {
+      justify-content: space-between;
+    }
+  }
+}
+
+.marginAround{
+  margin: 0 10px 0 10px;
+}

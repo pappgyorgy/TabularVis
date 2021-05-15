@@ -120,7 +120,7 @@ class DataMatrix implements InputData{
   DataMatrix.randomGenerated(this.diagramDataID, [int col_num = 0, int col_max = 7,
     int row_num = 0, int row_max = 7,
     this.depth_num = 1, bool randomZeroes = false,
-    int min_value = 1, int max_value  = 99]){
+    num min_value = 1, num max_value  = 99]){
     Label.groupLabels[this.diagramDataID] = new Map<int, Label>();
     this.col_num = col_num > 0 ? col_num : new Random(new DateTime.now().millisecondsSinceEpoch).nextInt(col_max) + 3;
     this.row_num = row_num > 0 ? row_num : new Random(new DateTime.now().millisecondsSinceEpoch + 100).nextInt(row_max) + 3;
@@ -255,22 +255,28 @@ class DataMatrix implements InputData{
     var rowVisObjGroup = objectHierarchy.createChild(rowLabelGroup, 0.0, VisualObjectRole.GROUP);
     var colVisObjGroup = objectHierarchy.createChild(colLabelGroup, 0.0, VisualObjectRole.GROUP);
 
-    objectHierarchy.getElementByIndex(rowLabelGroup.index);
-    objectHierarchy.getElementByIndex(colLabelGroup.index);
+    //objectHierarchy.getElementByIndex(rowLabelGroup.index);
+    //objectHierarchy.getElementByIndex(colLabelGroup.index);
 
     //First try to get the elements for the two label
     //If there is no element for the label then create one
-    var rowVisObj = rowVisObjGroup.createChild(row, 0.0, VisualObjectRole.SEGMENT);
-    var colVisObj = colVisObjGroup.createChild(col, 0.0, VisualObjectRole.SEGMENT);
+    var rowVisObj = rowVisObjGroup.createChild(row, 0.0, VisualObjectRole.BLOCK);
+    var colVisObj = colVisObjGroup.createChild(col, 0.0, VisualObjectRole.BLOCK);
 
     //create the sub elements for the connection
-    var rowChild = rowVisObj.createChild(row.generateNewLabel, value, VisualObjectRole.SUB_SEGMENT);
+    var rowChild = rowVisObj.createChild(row.generateNewLabel, value, VisualObjectRole.BAR);
     rowChild.label.index = rowVisObj.numberOfChildren;
-    var colChild = colVisObj.createChild(col.generateNewLabel, value, VisualObjectRole.SUB_SEGMENT);
+    var colChild = colVisObj.createChild(col.generateNewLabel, value, VisualObjectRole.BAR);
     colChild.label.index = colVisObj.numberOfChildren;
 
     // create the connection
     ConnectionManager.createNewConnection(rowChild, colChild, objectHierarchy.id);
+
+    /*var nameOfConn = "connection: ${rowChild.id}/${colChild.id}";
+    ConnectionManager.listOfConnection[objectHierarchy.id][nameOfConn] = new ConnectionVis(rowChild, colChild, nameOfConn);
+    rowChild.connection = ConnectionManager.listOfConnection[objectHierarchy.id][nameOfConn];
+    colChild.connection = ConnectionManager.listOfConnection[objectHierarchy.id][nameOfConn];*/
+
   }
 
   /// Get all labels ID
@@ -285,12 +291,28 @@ class DataMatrix implements InputData{
     return retVal;
   }
 
-  void updateLabelInformation(bool isRow, int tablePos, int newGroup){
-    this._getLabelByTablePos(isRow, tablePos).groupNumber = newGroup;
+  void updateLabelInformation(bool isRow, int tablePos, {int newGroup = null, String newName = null, bool uniqueScale = null}){
+    if(newGroup != null){
+      this._getLabelByTablePos(isRow, tablePos).groupNumber = newGroup;
+    }else if(newName != null){
+      this._getLabelByTablePos(isRow, tablePos).groupLabel.name = newName;
+    }else if(uniqueScale != null){
+      this._getLabelByTablePos(isRow, tablePos).uniqueScale = uniqueScale;
+      print(this._getLabelByTablePos(isRow, tablePos).uniqueScale);
+    }
+
   }
 
   int getLabelGroupNumber(bool isRow, int tablePos){
     return this._getLabelByTablePos(isRow, tablePos).groupNumber;
+  }
+
+  String getLabelGroupName(bool isRow, int tablePos){
+    return this._getLabelByTablePos(isRow, tablePos).groupLabel.name;
+  }
+
+  bool getLabelUniqueScale(bool isRow, int tablePos){
+    return this._getLabelByTablePos(isRow, tablePos).uniqueScale;
   }
 
   /// Get a hierarchy data structure from the input data
@@ -318,13 +340,17 @@ class DataMatrix implements InputData{
         this.objectHierarchy, this.rowLabel, this.colLabel);
 
     this.rowLabel.forEach((Label row){
-      var rowLabelGroup = row.groupLabel;
-      row.id = rowLabelGroup.id + row.id;
+      if(!row.isPartialLabel) {
+        var rowLabelGroup = row.groupLabel;
+        row.id = "${rowLabelGroup.id}_${row.id}";
+      }
     });
 
     this.colLabel.forEach((Label col){
-      var colLabelGroup = col.groupLabel;
-      col.id = colLabelGroup.id + col.id;
+      if(!col.isPartialLabel){
+        var colLabelGroup = col.groupLabel;
+        col.id = "${colLabelGroup.id}_${col.id}";
+      }
     });
 
 
@@ -384,7 +410,6 @@ class DataMatrix implements InputData{
       }
     }
 
-
     fillGapsInIndex(objectHierarchy);
 
     ConnectionVis.updateMainSegmentsColors(objectHierarchy);
@@ -394,30 +419,35 @@ class DataMatrix implements InputData{
     //Reverse subSegments order to get a better result
 
     objectHierarchy.getChildren.forEach((VisualObject group) {
-      group.getChildren.forEach((VisualObject segment) {
-        segment.label.resetLabelGenerationCounter();
-        var segmentChildNum = segment.getChildren.length;
-        segment.getChildren.forEach((VisualObject subSegment) {
-          subSegment.label.index = (segmentChildNum + 1) - subSegment.label.index;
+      group.getChildren.forEach((VisualObject block) {
+        block.label.resetLabelGenerationCounter();
+        var segmentChildNum = block.getChildren.length;
+        block.getChildren.forEach((VisualObject bar) {
+          bar.index = (segmentChildNum + 1) - bar.label.index;
         });
       });
     });
 
-    //print("${objectHierarchy.getChildren}");
     return objectHierarchy;
   }
 
   void fillGapsInIndex(VisualObject root){
     var actualIndex = 1;
-    bool holeFound = false;
-    for(var i = 1; i <= Label.getGroupLabelsIndices(root.id).length; i++){
+    int numberOfShift = 0;
+    for(var i = 1; i <= (this.row_num + this.col_num) - 2; i++){
       try {
         var nextGroupID = root.getElementByIndex(i);
         var nextGroup = root.getChildByID(nextGroupID);
-        nextGroup.label.index = actualIndex++;
+        nextGroup.label.index = actualIndex;
+        root.childrenIDsInOrder[actualIndex++] = nextGroupID;
       }catch(error){
-
+        numberOfShift++;
+        //log.log(Level.INFO, "Group with index ${i} is not found. All element will be shift by ${numberOfShift}");
       }
+    }
+
+    for(int i = root.numberOfChildren+1; i <= (this.row_num + this.col_num) - 2; i++){
+      root.childrenIDsInOrder.remove(i);
     }
   }
 
@@ -650,15 +680,15 @@ class DataMatrix implements InputData{
               if(rnd.nextDouble() < this.percentOfRandomZeroes){
                 this._matrixData[row][col][depth] = 0;
               }else {
-                /*this._matrixData[row][col][depth] =
-                    rnd.nextInt(maxValue - minValue as int) + minValue;*/
-                var helper = 0;
+                this._matrixData[row][col][depth] =
+                    rnd.nextInt(maxValue - minValue as int) + minValue;
+                /*var helper = 0;
                 do {
                   helper = MathFunc.getNormalDistributedRandomNumber(
                       maxValue.toDouble(), minValue.toDouble()).toInt();
                 }while(helper < 1);
 
-                this._matrixData[row][col][depth] = helper;
+                this._matrixData[row][col][depth] = helper;*/
 
                 /*var helper = 0;
                 do {
@@ -667,21 +697,21 @@ class DataMatrix implements InputData{
 
                 //var helper = ((listOfAllGeneratedNumber[generatedNumberIndex++] * convertToRange) * maxValue + minValue).toInt();
 
-                this._matrixData[row][col][depth] = helper;
+                //this._matrixData[row][col][depth] = helper;
 
               }
             }else{
-              /*this._matrixData[row][col][depth] =
+              this._matrixData[row][col][depth] =
                   new Random(new DateTime.now().millisecondsSinceEpoch + (allElement * numberOfElementInTable))
-                      .nextInt(maxValue - minValue as int) + minValue;*/
+                      .nextInt(maxValue - minValue as int) + minValue;
 
-              var helper = 0;
+              /*var helper = 0;
               do {
                 helper = MathFunc.getNormalDistributedRandomNumber(
                     maxValue.toDouble(), minValue.toDouble()).toInt();
               }while(helper < 1);
 
-              this._matrixData[row][col][depth] = helper;
+              this._matrixData[row][col][depth] = helper;*/
 
               /*var helper = 0;
               do {
@@ -690,7 +720,7 @@ class DataMatrix implements InputData{
 
               //var helper = ((listOfAllGeneratedNumber[generatedNumberIndex++] * convertToRange) * maxValue + minValue).toInt();
 
-              this._matrixData[row][col][depth] = helper;
+              //this._matrixData[row][col][depth] = helper;
             }
           }
         }

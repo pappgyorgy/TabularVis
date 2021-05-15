@@ -1,18 +1,29 @@
-## TabularVis
+# README #
 
-This is a circular layout based information visualization application for tabular data.
-Used technologies:
-  - Dart
-  - Angular dart
-  - Polymer dart
-  - WebGL (three.dart)
-  - Handsontabel (community edition)
+This README would normally document whatever steps are necessary to get your application up and running.
 
-## Set up
+### What is this repository for? ###
 
-  - Run pub get and after that run npm install in the ./web/components/ folder
-  - run pub serve and visit http://localhost:8080 to open the application
+* Quick summary
+* Version
+* [Learn Markdown](https://bitbucket.org/tutorials/markdowndemo)
 
-## License
+### How do I get set up? ###
 
-See the [LICENSE](LICENSE.md) file for license rights and limitations (MIT).
+* Summary of set up
+* Configuration
+* Dependencies
+* Database configuration
+* How to run tests
+* Deployment instructions
+
+### Contribution guidelines ###
+
+* Writing tests
+* Code review
+* Other guidelines
+
+### Who do I talk to? ###
+
+* Repo owner or admin
+* Other community or team contact

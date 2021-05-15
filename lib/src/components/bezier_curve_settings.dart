@@ -1,55 +1,53 @@
 import 'dart:async';
 import 'dart:html';
 import 'dart:math';
-import 'package:angular2/angular2.dart';
+import 'package:angular/angular.dart';
 import 'package:angular_components/angular_components.dart';
 
-import '../../tabular_vis.dart';
+import 'package:bezier_simple_connect_viewer/bezier_simple_connect_viewer.dart';
 
-import 'paper_tab_selected_directive.dart';
-import 'paper_radio_roup_selected_directive.dart';
-
-import 'package:polymer_elements/paper_slider.dart';
-import 'package:polymer_elements/paper_card.dart';
-import 'package:polymer_elements/paper_tabs.dart';
-import 'package:polymer_elements/paper_button.dart';
-import 'package:polymer_elements/paper_header_panel.dart';
-import 'package:polymer_elements/iron_pages.dart';
-import 'package:polymer_elements/paper_toggle_button.dart';
-import 'package:polymer_elements/paper_toolbar.dart';
-import 'package:polymer_elements/paper_dropdown_menu.dart';
-import 'package:polymer_elements/paper_listbox.dart';
-import 'package:polymer_elements/paper_radio_group.dart';
-import 'package:polymer_elements/paper_radio_button.dart';
-import 'package:polymer_elements/paper_scroll_header_panel.dart';
-import 'package:polymer_elements/iron_flex_layout_classes.dart';
-import 'package:polymer_elements/iron_icon.dart';
-import 'package:three/three.dart' show Color;
-import 'package:color_picker/color_picker.dart';
-import 'package:polymer_elements/paper_dialog.dart';
-import 'package:polymer_elements/paper_drawer_panel.dart';
 import '../geometry/geometry.dart';
 import '../math/math.dart';
 import 'package:vector_math/vector_math.dart';
 
-import 'slider_value.dart';
+import 'input_slider.dart';
 
 @Component(
     selector: "bezier-curve-settings",
     templateUrl: "template/bezier_curve_settings.html",
-    directives: const <dynamic>[materialDirectives],
-    providers: const <dynamic>[materialDirectives]
+    directives: const <dynamic>[materialDirectives, InputSlider],
+    providers: const <dynamic>[materialProviders],
+    styleUrls: const ['template/scss/common.css', 'template/scss/bezier_curve_settings.css'],
 )
 class BezierCurveSettings implements AfterViewInit{
   final Application _application;
   List<Point> controlPoints;
 
-  SliderValue crest;
-  SliderValue bezier_radius;
-  SliderValue bezier_radius_purity;
+  @Input()
+  double crest = LineBezier.crest;
+  @Input()
+  double bezier_radius = LineBezier.bezier_radius;
+  @Input()
+  double bezier_radius_purity;
 
-  SliderValue curveStart;
-  SliderValue curveEnd;
+  double curveStart;
+  double curveEnd;
+
+  /*void curveStartChange(num newValue){
+    this.curveStart = newValue.toDouble();
+  }
+  void curveEndChange(num newValue){
+    this.curveEnd = newValue.toDouble();
+  }
+  void crestChange(num newValue){
+    this.crest = newValue.toDouble();
+  }
+  void bezier_radiusChange(num newValue){
+    this.bezier_radius = newValue.toDouble();
+  }
+  void bezier_radius_purityChange(num newValue){
+    this.bezier_radius_purity = newValue.toDouble();
+  }*/
 
   CanvasElement bezierCanvas;
   CanvasRenderingContext2D ctx;
@@ -58,46 +56,42 @@ class BezierCurveSettings implements AfterViewInit{
   Diagram2D myDiagram;
 
   BezierCurveSettings(this._application){
-    /*this.crest = new SliderValue(0.5,0.5,0.0,2.0,
-            (num value){this._application.changeBezierParam(1,value);});
-    this.bezier_radius = new SliderValue(0.0,0.0,0.0,2.0,
-            (num value){this._application.changeBezierParam(2,value);});
-    this.bezier_radius_purity = new SliderValue(0.75,0.75,-2.0,2.0,
-            (num value){this._application.changeBezierParam(3,value);});*/
-    this.crest = new SliderValue(0.5,0.5,0.0,2.0,
-            (num value){
-              //updateBezierParam(value, 1);
-              this._application.changeBezierParam(1, value);
-              updateBezierCurve();
-            });
-    this.bezier_radius = new SliderValue(0.0,0.0,0.0,2.0,
-            (num value){
-              //updateBezierParam(value, 2);
-              this._application.changeBezierParam(2, value);
-              updateBezierCurve();
-            });
-    this.bezier_radius_purity = new SliderValue(0.75,0.75,-2.0,2.0,
-            (num value){
-              //updateBezierParam(value, 3);
-              this._application.changeBezierParam(3, value);
-              updateBezierCurve();
-            });
+    LineBezier.crest = 0.5;
+    LineBezier.bezier_radius = 0.0;
+    LineBezier.bezier_radius_purity = 0.75;
 
-    this.curveStart = new SliderValue(0.5,0.5,0.0,6.28318530718,
-            (num value){
-              curveEndPointsAngularPosition.begin = (2*PI) - value.toDouble();
-              updateBezierCurve();
-            });
-    this.curveEnd = new SliderValue(1.5,1.5,0.0,6.28318530718,
-            (num value){
-              curveEndPointsAngularPosition.end = (2*PI) - value.toDouble();
-              updateBezierCurve();
-            });
+    this.crest = LineBezier.crest;
+    this.bezier_radius = LineBezier.bezier_radius;
+    this.bezier_radius_purity = LineBezier.bezier_radius_purity;
 
     curveEndPointsAngularPosition = new NumberRange.fromNumbers((2*PI) - 0.0, (2*PI) - (PI/2.0));
+    curveStart = 0.0;
+    curveEnd = (PI/2.0);
     myDiagram = new Diagram2D.empty();
     myDiagram.baseCircle.radius = 115.0;
 
+  }
+
+  void crestChange(num value){
+    this._application.changeBezierParam(1, value);
+    updateBezierCurve();
+  }
+  void bezier_radiusChange(num value){
+    this._application.changeBezierParam(2, value);
+    updateBezierCurve();
+  }
+  void bezier_radius_purityChange(num value){
+    this._application.changeBezierParam(3, value);
+    updateBezierCurve();
+  }
+
+  void curveStartChange(num value){
+    curveEndPointsAngularPosition.begin = (2*PI) - value.toDouble();
+    updateBezierCurve();
+  }
+  void curveEndChange(num value){
+    curveEndPointsAngularPosition.end = (2*PI) - value.toDouble();
+    updateBezierCurve();
   }
 
   void _addLinesToList(List<Point> listToAdd, List<HomogeneousCoordinate> listFrom, [int begin = 0, int end = 0]){
@@ -113,10 +107,6 @@ class BezierCurveSettings implements AfterViewInit{
     bezierCanvas = querySelector('#bezier_canvas') as CanvasElement;
     ctx = bezierCanvas.getContext("2d") as CanvasRenderingContext2D;
     ctx.translate(bezierCanvas.width/2,bezierCanvas.height/2);
-
-    LineBezier.crest = 0.5;
-    LineBezier.bezier_radius = 0.0;
-    LineBezier.bezier_radius_purity = 0.75;
 
     ctx.font = "15px Arial";
     ctx.lineWidth=2;

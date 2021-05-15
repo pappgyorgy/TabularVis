@@ -116,7 +116,7 @@ class DiagramCrossState extends State{
     return sumOfNeighbours;
   }
 
-  void changeStateByOrder(List<VisualObject> newOrder){
+  void changeStateByOrder(dynamic newOrder){
     this.order;
 
     for(var i = 0; i < newOrder.length; i++) {
@@ -171,7 +171,7 @@ class DiagramCrossState extends State{
     return new DiagramCrossState.simpleCopy(this);
   }
 
-  int diffNeighbourByOrder(List<VisualObject> order){
+  int diffNeighbourByOrder(List<dynamic> order){
     DiagramCrossState newState = this.copy();
     //newState.calculate();
     newState.changeStateByOrder(order);
@@ -181,7 +181,7 @@ class DiagramCrossState extends State{
   toString() => super.toString();
 
   @override
-  void chooseNeighbour(int neighbour) {
+  void chooseNeighbour(int neighbour, {bool isPermanent = false, bool enablePreCalculate = false, int startRange = 1, int endRange = -1}) {
     //Find out which connections you need to move and where
     // N = Number of groups = order.length
     // M = groups elements = order[i].length
@@ -276,7 +276,7 @@ class DiagramCrossState extends State{
   }
 
   @override
-  int diffNeighbour(int neighbour) {
+  int diffNeighbour(int neighbour, {bool isPermanent = false, bool enablePreCalculate = false, int startRange = 1, int endRange = -1}) {
     State newState = this.copy();
     //newState.calculate();
 
@@ -344,7 +344,7 @@ class DiagramCrossState extends State{
   }
 
   @override
-  State chooseRandomState() {
+  State chooseRandomState({bool setFinalOrder = true, bool enablePreCalculation = false, bool enableHelper = false}) {
     throw new UnimplementedError("unimplemented");
   }
 

@@ -46,7 +46,7 @@
 
     .editor-button-container{
         margin-top: 5px;
-        margin-right: 10px;
+        /*margin-right: 10px;*/
     }
 
     .editor-button-container > paper-button > iron-icon{
@@ -75,10 +75,6 @@
         width: 41px;
         text-align: center;
         margin-top: -22px;
-    }
-
-    #label_color_editor{
-        float: left;
     }
 
     .not-visible{
@@ -112,7 +108,7 @@
         color: white;
     }
 
-    #handle_table{
+    /*#handle_table{
         background-color:  #0E1F2B;
         color: white;
 
@@ -123,7 +119,6 @@
         color: white;
         background-color: rgba(255,255,255,0.2);
         border: 2px dashed white;
-        /* border-radius: 5px; */
         position: relative;
         display: block;
         height: 190px;
@@ -140,12 +135,12 @@
         -webkit-font-smoothing: antialiased;
         line-height: normal;
         text-transform: uppercase;
-    }
+    }*/
 
 
-    .inner-height{
+    /*.inner-height{
         height: 230px;
-    }
+    }*/
 
     #upload_container{
         height: 100%;
@@ -212,79 +207,133 @@
 
 </style>
 
-<!--<link rel="import" href="./components/iron-pages/iron-pages.html">!-->
-<paper-drawer-panel id="sideDrawer2" disable-swipe="true" disable-edge-swipe="true" drawer-width="80px">
-    <div drawer id="sidebar2" class="fit center-justified horizontal layout sidebar">
-        <div class="vertical layout" id="table_interaction_button_container">
-                <paper-icon-button icon="check" (click)="visualizeTable()"></paper-icon-button>
-                <paper-icon-button icon="file-download" (click)="downloadTable()"></paper-icon-button>
-                <paper-icon-button src="images/icons/table-edit_48.png" (click)="handleTables()"></paper-icon-button>
-                <paper-icon-button src="images/icons/table-row-plus-before_48.png" (click)="insertRow()"></paper-icon-button>
-                <paper-icon-button src="images/icons/table-column-plus-before_48.png" (click)="insertCol()"></paper-icon-button>
-                <paper-icon-button src="images/icons/table-row-remove_48.png" (click)="removeRow()"></paper-icon-button>
-                <paper-icon-button src="images/icons/table-column-remove_48.png" (click)="removeCol()"></paper-icon-button>
-                <paper-icon-button icon="av:shuffle" (click)="setRandomValues()"></paper-icon-button>
-                <paper-icon-button icon="delete-forever" (click)="clearTableValues()"></paper-icon-button>
-            <section *ngIf="showBlockSettings">
-                <hr/>
-                    <div class="icon-group-text">Color</div>
-                        <paper-icon-button id="label_color_editor" icon="editor:format-color-fill"></paper-icon-button>
-                    <div class="icon-group-text">Group</div>
-                    <div class="icon-group-text">No.</div>
-                        <paper-input id="group_number_setter" [(value)]="groupNumber" (change)="changeLabelGroup($event)" class="editor-input" type="number" auto-validate allowed-pattern="[0-9]" min="1"></paper-input>
-            </section>
-        </div>
-    </div>
-    <div main>
-        <div id="table-editor-container" class="content fit">
-            <div id="table-placeholder">
-                <div id="table_container"></div>
-            </div>
-        </div>
-    </div>
-</paper-drawer-panel>
+<material-drawer persistent #tableMainDrawer="drawer" [visible]="drawerVisibility" class="main-sidebar">
+    <div id="tableDrawerButtonCont" *deferredContent>
 
-<paper-dialog id="handle_table" modal>
-    <div id="dialog_container" class="vertical layout">
-        <div class="paper-dialog-buttons flex">
-            <paper-icon-button class="close" icon="close" dialog-confirm></paper-icon-button>
+        <material-button icon class="sideBarButton" (click)="visualizeTable()">
+            <material-icon class="sideBarIcon" icon="check"></material-icon>
+        </material-button>
+        <material-button icon class="sideBarButton" (click)="downloadTable()">
+            <material-icon class="sideBarIcon" icon="file_download"></material-icon>
+        </material-button>
+
+        <material-button icon class="sideBarButton" (trigger)="showHandleTableDialog = !showHandleTableDialog">
+            <img src="images/icons/table-edit_48.png"/>
+        </material-button>
+        <material-button icon class="sideBarButton" (click)="insertRow()">
+            <img src="images/icons/table-row-plus-before_48.png"/>
+        </material-button>
+        <material-button icon class="sideBarButton" (click)="insertCol()">
+            <img src="images/icons/table-column-plus-before_48.png"/>
+        </material-button>
+        <material-button icon class="sideBarButton" (click)="removeRow()">
+            <img src="images/icons/table-row-remove_48.png"/>
+        </material-button>
+        <material-button icon class="sideBarButton" (click)="removeCol()">
+            <img src="images/icons/table-column-remove_48.png"/>
+        </material-button>
+
+        <material-button icon class="sideBarButton" (click)="setRandomValues()">
+            <material-icon class="sideBarIcon" icon="shuffle"></material-icon>
+        </material-button>
+        <material-button icon class="sideBarButton" (click)="clearTableValues()">
+            <material-icon class="sideBarIcon" icon="delete_forever"></material-icon>
+        </material-button>
+
+        <!--<section *ngIf="showBlockSettings">
+            <hr class="sidebarWidth"/>
+            <color-input [iconButton]="true" label="Color" class="sidebarColorPicker" labelLayout="vertical" labelPosition="start" (colorChange)="changeBlockColours($event)"></color-input>
+            <div class="spaceBetween"></div>
+            <div class="icon-group-text">Group</div>
+            <div class="icon-group-text">No.</div>
+            <input-slider class="sidebarWidth" [centered]="true" inputButtonLayout="vertical-around" [value]="selectedGroupNumber" [minValue]="0" (inputValueChange)="selectedGroupNumberChange($event)"></input-slider>
+            <div class="icon-group-text">Group</div>
+            <div class="icon-group-text">Name</div>
+            <material-input></material-input>
+        </section>!-->
+
+    </div>
+</material-drawer>
+
+
+
+<material-content class="main-sidebar-content fit-content" [ngClass]="{matDrawerCollapsed: !tableMainDrawer.visible}">
+
+    <header class="material-header shadow">
+        <div class="material-header-row">
+            <color-input [disabled]="!showBlockSettings" label="Color" class="sidebarColorPicker" (colorChange)="changeBlockColours($event)"></color-input>
+            <input-slider [inputElementDisabled]="!showBlockSettings" id="table-editor-group-no" label="Group No." [value]="selectedGroupNumber" [minValue]="1" [maxValue]="1000" (inputValueChange)="selectedGroupNumberChange($event)"></input-slider>
+            <material-input [disabled]="!showBlockSettings" id="table-editor-group-name" floatingLabel label="Name" type="text" [(ngModel)]="selectedGroupName" (inputKeyPress)="selectedGroupNameChange($event)"></material-input>
+            <span class="margin-around">Unique scaling</span>
+            <material-toggle class="toggles" [(checked)]="uniqueScale" [disabled]="!showBlockSettings" (click)="selectedBlockUniqueScaleChange($event)"></material-toggle>
+            <span class="margin-around">Merge blocks in same group</span>
+            <material-toggle class="toggles" [(checked)]="mergeBlockInGroup" (click)="mergeBlocksInGroupSelectedChange($event)"></material-toggle>
         </div>
-        <div id="dialog-main" class="horizontal layout flex 4">
-            <div id="upload_container" class="flex dialog-container">
-                <div id="drop_zone_container" class="vertical layout">
-                    <div class="inner-height">
-                        <div class="flex" id="drop_zone"><span>Drag file here</span></div>
-                        <div id="centered_text">Or</div>
-                    </div>
-                    <input id="file" type="file" class="inputfile">
-                    <label for="file"><paper-button raised class="flex">Choose one</paper-button></label>
-                    <!--<paper-button raised class="flex" (click)="chooseFileForUpload($event)">Choose one</paper-button>!-->
-                </div>
-            </div>
-            <div id="create_new_table" class="flex dialog-container">
-                <div class="vertical layout">
-                    <div class="inner-height">
-                        <paper-input label="Number of rows" id="width" [(value)]="tableRow" type="number" auto-validate allowed-pattern="[0-9]" min="2"></paper-input>
-                        <paper-input label="Number of columns" id="height" [(value)]="tableCol" type="number" auto-validate allowed-pattern="[0-9]" min="2"></paper-input>
-                        <div class="horizontal layout">
-                            <span class="flex text-before-toggle-button">Random numbers</span><paper-toggle-button (change)="useRandomNumbers($event)"></paper-toggle-button>
-                        </div>
-                        <div class="horizontal layout">
-                            <span class="flex text-before-toggle-button">Random zeroes</span><paper-toggle-button id="random_zeroes" checked disabled (change)="useRandomZeroes($event)"></paper-toggle-button>
-                        </div>
-                        <div class="horizontal layout">
-                            <div id="min_value_input" class="vertical layout">
-                                <paper-input disabled label="Minimum value" id="min_value" [(value)]="minRandomValue" type="number" auto-validate allowed-pattern="[0-9]" min="0"></paper-input>
-                            </div>
-                            <div id="max_value_input" class="vertical layout">
-                                <paper-input disabled label="Maximum value" id="max_value" [(value)]="maxRandomValue" type="number" auto-validate allowed-pattern="[0-9]" min="0"></paper-input>
-                            </div>
-                        </div>
-                    </div>
-                    <paper-button raised class="flex" (click)="createNewTable($event)">Create new table</paper-button>
-                </div>
+    </header>
+
+    <div id="table-editor-container">
+        <div id="table-placeholder">
+            <div id="table_container">
+
             </div>
         </div>
     </div>
-</paper-dialog>
+</material-content>
+
+<modal [visible]="showHandleTableDialog">
+    <material-dialog id="handle_table" class="basic-dialog" hideFooter>
+
+        <div id="dialog_container" class="horizontal-layout positioned-to-right" header>
+            <div class="paper-dialog-buttons">
+                <material-button class="close" icon (trigger)="showHandleTableDialog = false">
+                    <material-icon icon="close"></material-icon>
+                </material-button>
+            </div>
+        </div>
+
+        <div id="dialog-main" class="flex">
+            <div id="upload_container" class="flex dialog-part">
+                <div class="vertical-layout full-width">
+                    <div #dropZoneDiv id="drop_zone"><span>Drag file here</span></div>
+                    <div id="centered_text">Or</div>
+                    <input #fileInput id="file" type="file" class="inputfile" (change)="onFileInputChange($event)">
+                    <label for="file">
+                        <material-button id="chooseFile" clear-size raised>Choose one</material-button>
+                    </label>
+                </div>
+            </div>
+
+            <div id="create_new_table" class="flex dialog-part">
+                <div class="vertical-layout">
+
+                    <div>
+                        <input-slider label="Number of rows" [value]="tableRow" [minValue]="2" [maxValue]="1000" (inputValueChange)="tableRowChange($event)"></input-slider>
+                    </div>
+
+                    <div>
+                        <input-slider label="Number of columns" [value]="tableCol" [minValue]="2" [maxValue]="1000" (inputValueChange)="tableColChange($event)"></input-slider>
+                    </div>
+
+                    <div class="horizontal-layout space-between">
+                        <span class="flex text-before-toggle-button">Random numbers</span><material-toggle class="toggles" [(checked)]="randomValuesEnabled"></material-toggle>
+                    </div>
+                    <div class="horizontal-layout space-between">
+                        <span class="flex text-before-toggle-button">Random zeroes</span><material-toggle class="toggles" id="random_zeroes" [disabled]="!randomValuesEnabled" [(checked)]="useRandomZeroesValue"></material-toggle>
+                    </div>
+                    <div class="horizontal-layout">
+                        <div id="min_value_input" class="flex">
+                            <material-input class="initial-width" floatingLabel  label="Minimum value" id="min_value" [(ngModel)]="minValue" (inputValueChange)="minValueChange($event)" type="number" [lowerBound]="0" [disabled]="!randomValuesEnabled"></material-input>
+                        </div>
+                        <div id="max_value_input" class="flex">
+                            <material-input class="initial-width" floatingLabel  label="Maximum value" id="max_value" [(ngModel)]="maxValue" (inputValueChange)="maxValueChange($event)" type="number" [lowerBound]="0" [disabled]="!randomValuesEnabled"></material-input>
+                        </div>
+                    </div>
+                    <material-button raised clear-size (click)="createNewTable($event)">
+                        Create new table
+                    </material-button>
+                </div>
+            </div>
+        </div>
+    </material-dialog>
+</modal>
 

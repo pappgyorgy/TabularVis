@@ -1,6 +1,6 @@
 part of visualizationGeometry;
 
-class ShapeBezier implements ShapeForm {
+class ShapeBezier extends ShapeForm {
   List<LineGeom<double, HomogeneousCoordinate>> _lines =
     new List<LineGeom<double, HomogeneousCoordinate>>(8);
 
@@ -32,13 +32,13 @@ class ShapeBezier implements ShapeForm {
   bool _is3D = false;
   double shapeHeight = 10.0;
 
-  ShapeBezier(this._lines, this._diagram) {}
+  ShapeBezier(this._lines, this._diagram) : super._();
 
   ShapeBezier.fromData(this._diagram,
       RangeMath<double> rangeOne,
       RangeMath<double> rangeTwo,
       [this._parent = null, String key = "",
-      this._is3D = false, this.shapeHeight = 10.0]) {
+      this._is3D = false, this.shapeHeight = 10.0]) : super._(){
 
     var lineArcWidth = this._diagram.getLineWidthArc(
         this._diagram.lineSegmentCircle);
@@ -79,7 +79,6 @@ class ShapeBezier implements ShapeForm {
 
     this._lines[3] = new LineGeom(LineType.simple,
         this._diagram, this._diagram.drawCircle, rangeTwo);
-
 
     this._lines[4] = new LineGeom(LineType.bezier,
         this._diagram, this._diagram.lineOuterDrawCircle, firstInnerSideRange);
@@ -263,13 +262,13 @@ class ShapeBezier implements ShapeForm {
     var listOfFaces = new List<Face3>();
     for(var i = 0; i < this._numberOfPolygonLines - 1; i++){
       for(var j  = 0; j < this._polygonVerticesOffset - 1; j++){
-        listOfFaces.add(new Face3(
+        listOfFaces.add(new Face3Ext.withNormalsColors(
           ((i+1) * this._polygonVerticesOffset) + j, // Face first vertex
           ((i+1) * this._polygonVerticesOffset) + (j + 1), // Face second vertex
           (i * this._polygonVerticesOffset) + j, // Face third vertex
           vertexNormals, vertexColors
         ));
-        listOfFaces.add(new Face3(
+        listOfFaces.add(new Face3Ext.withNormalsColors(
           (i *  this._polygonVerticesOffset) + j,
           ((i+1) * this._polygonVerticesOffset) + (j + 1),
           (i * this._polygonVerticesOffset) + (j + 1),
@@ -283,13 +282,13 @@ class ShapeBezier implements ShapeForm {
     vertexColors = <Color>[borderBaseColor, borderBaseColor, borderBaseColor];
 
     for(var i = 0; i < this._borderVerticesOffset - 1; i++){
-      listOfFaces.add(new Face3(
+      listOfFaces.add(new Face3Ext.withNormalsColors(
           this._numberOfPolygonVertices + (i + this._borderVerticesOffset), // Face first vertex
           this._numberOfPolygonVertices + i, // Face second vertex
           this._numberOfPolygonVertices + (i + this._borderVerticesOffset + 1), // Face third vertex
           vertexNormals, vertexColors
       ));
-      listOfFaces.add(new Face3(
+      listOfFaces.add(new Face3Ext.withNormalsColors(
           this._numberOfPolygonVertices + (i + this._borderVerticesOffset + 1),
           this._numberOfPolygonVertices + i,
           this._numberOfPolygonVertices + i + 1,
@@ -297,13 +296,13 @@ class ShapeBezier implements ShapeForm {
       ));
     }
 
-    listOfFaces.add(new Face3(
+    listOfFaces.add(new Face3Ext.withNormalsColors(
         this._numberOfPolygonVertices + (this._numberOfBorderVertices - 1), // Face first vertex
         this._numberOfPolygonVertices + (this._borderVerticesOffset - 1), // Face second vertex
         this._numberOfPolygonVertices + (this._borderVerticesOffset), // Face third vertex
         vertexNormals, vertexColors
     ));
-    listOfFaces.add(new Face3(
+    listOfFaces.add(new Face3Ext.withNormalsColors(
         this._numberOfPolygonVertices + (this._borderVerticesOffset),
         this._numberOfPolygonVertices + (this._borderVerticesOffset - 1),
         this._numberOfPolygonVertices,
@@ -355,13 +354,13 @@ class ShapeBezier implements ShapeForm {
   }
 
   @override
-  void modifyGeometry(List<RangeMath<double>> ranges,
-      List<SimpleCircle<HomogeneousCoordinate>> circles,
+  void modifyGeometry(RangeMath<double> rangeA, RangeMath<double> rangeB,
       [ShapeForm parent = null, String key = "",
-      bool is3D = false, double height = 10.0]) {
+      bool is3D = false, double height = 10.0,
+        RangeMath<double> textRange, int value, RangeMath<double> blockRange, RangeMath<double> blockRange2]) {
 
-    var rangeOne = ranges.first;
-    var rangeTwo = ranges.last;
+    var rangeOne = rangeA;
+    var rangeTwo = rangeB;
 
     var firstSideRange = new NumberRange.fromNumbers(
         rangeOne.end, rangeTwo.begin

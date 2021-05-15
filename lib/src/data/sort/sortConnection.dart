@@ -9,7 +9,10 @@ class SortConnection{
 
   static int groupChildrenNum = 1000;
 
-  RangeMath<int> connectionRange;
+  int beginRange;
+  int endRange;
+  double beginRad;
+  double endRad;
   Label beginGroup;
   Label begin;
   Label endGroup;
@@ -34,14 +37,19 @@ class SortConnection{
       this.end = begin;
     }
 
-    connectionRange = new NumberRange<int>.fromNumbers(0, 1);
+    //connectionRange = new NumberRange<int>.fromNumbers(0, 1);
     this.beginGroupIndex = this.beginGroup.index;
     this.beginIndex = this.begin.index;
     this.endGroupIndex = this.endGroup.index;
     this.endIndex = this.end.index;
 
-    this.connectionRange.begin = this.beginIndex + this.beginGroupIndex * groupChildrenNum;
-    this.connectionRange.end = this.endIndex + this.endGroupIndex * groupChildrenNum;
+    this.beginRange = this.beginIndex + this.beginGroupIndex * groupChildrenNum;;
+    this.endRange = this.endIndex + this.endGroupIndex * groupChildrenNum;
+
+    this.beginRad = this.beginRange * 0.0001;
+    this.endRad = this.endRange * 0.0001;
+    //this.connectionRange.begin = this.beginIndex + this.beginGroupIndex * groupChildrenNum;
+    //this.connectionRange.end = this.endIndex + this.endGroupIndex * groupChildrenNum;
   }
 
   int compareTo(SortConnection o) {
@@ -73,11 +81,15 @@ class SortConnection{
     switch(connPart){
       case ConnectionPart.begin:
         this.beginIndex = newValue;
-        this.connectionRange.begin = this.beginIndex + this.beginGroupIndex * groupChildrenNum;
+        //this.connectionRange.begin = this.beginIndex + this.beginGroupIndex * groupChildrenNum;
+        this.beginRange = this.beginIndex + this.beginGroupIndex * groupChildrenNum;
+        this.beginRad = this.beginRange * 0.0001;
         break;
       case ConnectionPart.end:
         this.endIndex = newValue;
-        this.connectionRange.end = this.endIndex + this.endGroupIndex * groupChildrenNum;
+        //this.connectionRange.end = this.endIndex + this.endGroupIndex * groupChildrenNum;
+        this.endRange = this.endIndex + this.endGroupIndex * groupChildrenNum;
+        this.endRad = this.endRange * 0.0001;
         break;
       default:
         throw new StateError("Not valid value for swith variable (Good value = ConnectionPart) ");
@@ -93,8 +105,14 @@ class SortConnection{
     this.beginIndex = state.getElementIndexByID(this.beginGroup.id, this.begin.id);
     this.endIndex = state.getElementIndexByID(this.endGroup.id, this.end.id);
 
-    this.connectionRange.begin = this.beginIndex + this.beginGroupIndex * groupChildrenNum;
-    this.connectionRange.end = this.endIndex + this.endGroupIndex * groupChildrenNum;
+
+    this.beginRange = this.beginIndex + this.beginGroupIndex * groupChildrenNum;;
+    this.endRange = this.endIndex + this.endGroupIndex * groupChildrenNum;
+
+    this.beginRad = this.beginRange * 0.0001;
+    this.endRad = this.endRange * 0.0001;
+    //this.connectionRange.begin = this.beginIndex + this.beginGroupIndex * groupChildrenNum;
+    //this.connectionRange.end = this.endIndex + this.endGroupIndex * groupChildrenNum;
   }
 
   bool equals(Object obj) {
@@ -122,36 +140,65 @@ class SortConnection{
     return true;
   }
 
-
-  // 1: inside
-  // 2: outside
-  // 3: unclear
-  int _valueInConnectionRange(int value){
-    var retVal = 3;
-
-    var firstTest = connectionRange.isValueInRange(value, RangeCloseType.endOpened);
-
-    return retVal;
+  double convertPosToRad(int a){
+    return a * 0.0001;
   }
 
+  int intersectionTest(SortConnection other){
+    return 1 + (-1 - overlapOfTwoRange(this.beginRad, this.endRad, other.beginRad, other.endRad)/2).sign.toInt();
+  }
+
+  double overlapOfTwoRange(double a, double b, double c, double d){
+    return (pointInsideGivenRange(a, b, c) * pointInsideGivenRange(a, b, d)).sign
+        + (pointInsideGivenRange(c, d, a) * pointInsideGivenRange(c, d, b)).sign;
+  }
+
+  double pointInsideGivenRange(double a, double b, double c){
+    var value = dist(midPoint(a, b), c) - dist(a, b)/2;
+    return value.abs() < pow(10, -15) ? 0 : value;
+  }
+
+  double midPoint(double a, double b){
+    return (a-b).abs() > pi ? normValue((a+b)/2 + pi) : normValue((a+b)/2);
+  }
+
+  double normValue(double a){
+    return a - (a / (2*pi)).floor() * (2*pi);
+  }
+
+  double dist(double a, double b){
+    return (a-b).abs() > pi ? (2*pi) - (a-b).abs() : (a-b).abs();
+  }
 
   bool isConnectionCollide(SortConnection other){
+
+    //print("a: $a\n, b: $b\n, c: $c\n, d: $d\n intersection: ${intersectionTest(a, b, c, d)}\n------------------------------------");
+
+    return intersectionTest(other) > 0;
+
+    /*bool newRetVal = intersectionTest(a, b, c, d) > 0;
+
+    bool retVal = false;
 
     if((!connectionRange.isValueInRange(other.connectionRange.begin, RangeCloseType.openedAndClosed) &&
         connectionRange.isValueInRange(other.connectionRange.end, RangeCloseType.opened)) ||
         (!connectionRange.isValueInRange(other.connectionRange.end, RangeCloseType.openedAndClosed) &&
             connectionRange.isValueInRange(other.connectionRange.begin, RangeCloseType.opened))){
-      return true;
+      retVal = true;
     }
 
     if((connectionRange.isValueInRange(other.connectionRange.begin, RangeCloseType.opened) &&
         !connectionRange.isValueInRange(other.connectionRange.end, RangeCloseType.closed)) ||
         (connectionRange.isValueInRange(other.connectionRange.end, RangeCloseType.opened) &&
             !connectionRange.isValueInRange(other.connectionRange.begin, RangeCloseType.closed))){
-      return true;
+      retVal = true;
     }
 
-    return false;
+    if(retVal != newRetVal){
+      int value = 4;
+    }
+
+    return newRetVal;*/
 
     /*bool firstTest = false;
     bool secondTest = false;

@@ -5,33 +5,37 @@
     <title></title>
 
     <!-- For development !-->
-    <base href="/">
+    <base href="/BezierSimpleConnectViewer/">
 
-    <!-- To work with browsers which are not supporting the web components !-->
+    <!-- For build !-->
+    <!--<base href="/~papp.gyorgy93/bezier/web/">!-->
+
+    <!-- For paper !-->
+    <!--<base href="/papp.gyorgy/tabularvis/">!-->
+
+    <!-- To work with browsers which are not supporting the web components
     <script src="packages/web_components/webcomponents.min.js"></script>
-    <script src="packages/web_components/dart_support.js"></script>
+    <script src="packages/web_components/dart_support.js"></script>!-->
+
     <!--<script src="../lib/src/components/template/polymer/bower_components/webcomponentsjs/webcomponents-lite.min.js"></script>!-->
     <!--<script src="./packages/web_components/webcomponents.min.js"></script>!-->
 
     <!--<link rel="import" href="../lib/src/components/template/polymer/bower_components/polymer/polymer.html">!-->
     <!--<link rel="import" href="../lib/src/components/template/polymer/bower_components/iron-flex-layout/iron-flex-layout-classes.html">!-->
 
-    <script src="./components/node_modules/handsontable/dist/handsontable.full.js"></script>
+
+    <!--<script defer type="application/dart" src="index.dart"></script>
+    <script defer src="./packages/browser/dart.js"></script>!-->
+    <script defer src="index.dart.js" type="application/javascript"></script>
+
+    <script src="./components/node_modules/handsontable/dist/handsontable.full.js" type="application/javascript"></script>
     <link rel="stylesheet" type="text/css" href="./components/node_modules/handsontable/dist/handsontable.full.css">
-    <script src="./js/data_table.js"></script>
-    <script src="./js/pnltri.js"></script>
+
+    <script src="./js/data_table.js" type="application/javascript"></script>
+    <script src="./js/earcut.js" type="application/javascript"></script>
 
     <!-- Google Material Icon !-->
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-
-    <script>
-        window.Polymer = window.Polymer || {};
-        window.Polymer.dom = 'shadow';
-    </script>
-
-    <script type="application/dart" src="index.dart"></script>
-    <!--<script defer src="../build/web/packages/browser/dart.js"></script>!-->
-    <script defer src="./packages/browser/dart.js"></script>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" type="text/css" rel="stylesheet">
 
     <title>TabularViewer</title>
 
@@ -40,38 +44,20 @@
 
     :root{
         --primary-color: #0E1F2B;
+        --secondary-color: #03a9f4;
         --dark-theme-text-color: white;
         --primary-text-color: white;
     }
 
-    /*:root {
-        --dark-primary-color: #303F9F;
-        --default-primary-color: #3F51B5;
-        --light-primary-color: #C5CAE9;
-        --text-primary-color: #FFFFFF;
-        --accent-color: #03A9F4;
-        --primary-background-color: #C5CAE9;
-        --primary-text-color: #212121;
-        --secondary-text-color: #757575;
-        --disabled-text-color: #BDBDBD;
-        --divider-color: #BDBDBD;
-
-
-
-
-        --drawer-menu-color: #ffffff;
-        --drawer-border-color: 1px solid #ccc;
-        --drawer-toolbar-border-color: 1px solid rgba(0, 0, 0, 0.22);
-
-
-        --paper-menu-background-color: #fff;
-        --menu-link-color: #111111;
-
-
-        --paper-input-container-color: rgba(255, 255, 255, 0.64);
-        --paper-input-container-focus-color: rgba(255, 255, 255, 1);
-        --paper-input-container-input-color: #fff;
-    }*/
+    html{
+        height: 100%;
+    }
+    body{
+        height: 100%;
+        width: 100%;
+        margin: 0;
+        background-color: var(--primary-color);
+    }
 
 
     .paper-dialog-buttons{
@@ -85,10 +71,6 @@
         height: 25px;
         border-radius: 25px;
         background-color: var(--dark-theme-text-color);
-    }
-
-    body{
-        background-color: var(--primary-color);
     }
 
     /*#drawer::shadow iron-selector #main > #scrim{
@@ -279,11 +261,25 @@
         background-color: #03a9f4;
     }
 
+    .column-fit-center{
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+
+    .row-fit-center{
+        width: 100%;
+        display: flex;
+        flex-direction: row;
+        justify-content: center;
+    }
+
 </style>
-<body class="fullbleed" unresolved>
-    <my-app class="fit vertical layout" id="my-app">
-        <div class="fit horizontal layout center">
-            <div class="flex vertical layout center">
+<body>
+    <my-app class="column-fit-center">
+        <div class="column-fit-center">
+            <div class="row-fit-center">
                 <div class="loader"></div>
             </div>
         </div>

@@ -7,10 +7,11 @@ class ConnectionManager{
 
   static VisConnection createNewConnection(VisualObject elementOne, VisualObject elementTwo,
       String diagramID){
-    var newConn = new ConnectionVis(elementOne, elementTwo, "connection: ${elementOne.id}/${elementTwo.id}");
-    elementOne.connection = elementTwo.connection =
-      ConnectionManager.listOfConnection[diagramID][newConn.nameOfConn] = newConn;
-    return newConn;
+    var nameOfConn = "connection: ${elementOne.id}/${elementTwo.id}";
+    ConnectionManager.listOfConnection[diagramID][nameOfConn] = new ConnectionVis(elementOne, elementTwo, nameOfConn);
+    elementOne.connection = ConnectionManager.listOfConnection[diagramID][nameOfConn];
+    elementTwo.connection = ConnectionManager.listOfConnection[diagramID][nameOfConn];
+    return ConnectionManager.listOfConnection[diagramID][nameOfConn];
   }
 
   /// This double Map store all connections for all diagram
@@ -75,6 +76,13 @@ class ConnectionManager{
 
   /// Change and update the color of the segments in the given diagram [diagramID]
   static void changAndUpdateSegmentColorPool(String diagramID, bool isRandom){
+    if(isRandom){
+      for(String key in ConnectionVis.mainSegmentsColorRandom.keys){
+        ConnectionVis.mainSegmentsColorRandom[key] =
+            ConnectionVis.mainSegmentsColorRangeRandom.getRandomValueFromRange();
+      }
+    }
+    
     for(VisConnection connection in
     ConnectionManager.listOfConnection[diagramID].values){
       connection.modifyMainSegmentsColorFromList(isRandom);

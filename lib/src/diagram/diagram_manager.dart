@@ -1,20 +1,17 @@
 library diagram;
 
 import 'dart:async';
+import 'package:angular/core.dart';
+import 'package:angular/angular.dart';
 import '../geometry/geometry.dart';
 import '../data/data_processing.dart';
 import '../math/math.dart';
 import 'package:vector_math/vector_math.dart';
-import 'package:dartson/dartson.dart';
-import 'package:three/three.dart';
-import 'package:three/extras/geometry_utils.dart' as GeomUtils;
-import 'package:three/extras/font_utils.dart' as FontUtils;
-import 'package:three/extras/core/shape_utils.dart' as ShapeUtils;
-import 'package:three/extras/shaders/shaders.dart';
+import '../graphic/render.dart' show Color;
 import 'dart:math';
-import '../geometry/polygon_near_linear_triangulation.dart';
-import 'package:angular2/core.dart';
+import 'package:angular/core.dart';
 import '../app_logger.dart';
+import '../graphic/render.dart';
 
 export '../geometry/geometry.dart' show LineBezier;
 
@@ -30,16 +27,26 @@ enum MatrixValueRepresentation{
 @Injectable()
 class DiagramManager{
 
+  static List<String> listOfIDs = new List<String>();
+
+  static ShapeType connectionType = ShapeType.bezier;
+
+  MatrixValueRepresentation latestRepresentation = null;
+  Map<String, Map<String, VisualObject>> diagramVisualObject;
   Map<String, VisualObject> _listOFVisualObjects;
   Map<String, Diagram> _listOFDiagrams;
   List<String> _diagramsID;
+  Map<String, Map<String, int>> _defaultOrder;
 
   final AppLogger _log;
+  final DataProcessing _dataProcessing;
 
-  DiagramManager(this._log)
+  DiagramManager(this._log, this._dataProcessing)
     : this._listOFDiagrams = new Map<String, Diagram>(),
     this._diagramsID = new List(),
-    this._listOFVisualObjects = new Map();
+    this._listOFVisualObjects = new Map(),
+    this._defaultOrder = new Map<String, Map<String, int>>(),
+    this.diagramVisualObject = new Map<String, Map<String, VisualObject>>();
 
   String get printAllDiagrams{
     StringBuffer sb = new StringBuffer();
@@ -52,12 +59,52 @@ class DiagramManager{
 
   void updateVisualObjectData(String ID, VisualObject updatedData){
     this._listOFVisualObjects[ID] = updatedData;
+
+    if(!_defaultOrder.containsKey(ID)){
+      this._defaultOrder[ID] = new Map<String, int>();
+      this._listOFVisualObjects[ID].performFunctionOnChildren((String groupKey, VisualObject actGroup) {
+        this._defaultOrder[ID][actGroup.label.id] = actGroup.label.index;
+
+        actGroup.performFunctionOnChildren((String blockKey, VisualObject actBlock) {
+          this._defaultOrder[ID][actBlock.id] = actBlock.label.index;
+        });
+      });
+    }
   }
 
-  VisualObject getVisualObjByID(String ID){
-    var retVal = this._listOFVisualObjects[ID];
+  VisualObject getLatestDiagramVisualObjByID(String ID, {bool resetDefaultOrder: false}){
+    //var retVal = this._listOFVisualObjects[ID];
+    var retVal = this._listOFDiagrams[this.latestActualDiagramID].actualDataObject;
     if(retVal == null){
       throw new StateError("There is no visualObject yet, with the given ID: $ID");
+    }else{
+      if(resetDefaultOrder){
+        this._defaultOrder[ID].forEach((String id, int index){
+          if(id.contains("_")){
+            retVal.getChildByIDs(id.split('_').first, 1, id).label.index = index;
+          }else{
+            retVal.getChildByIDs(id).label.index = index;
+          }
+        });
+      }
+    }
+    return retVal;
+  }
+
+  VisualObject getVisualObjByID(String diagramID, String ID, {bool resetDefaultOrder: false}){
+    var retVal = this._listOFDiagrams[diagramID].dataObjects[ID];
+    if(retVal == null){
+      throw new StateError("There is no visualObject yet, with the given ID: $ID");
+    }else{
+      if(resetDefaultOrder){
+        this._defaultOrder[ID].forEach((String id, int index){
+          if(id.contains("_")){
+            retVal.getChildByIDs(id.split('_').first, 1, id).label.index = index;
+          }else{
+            retVal.getChildByIDs(id).label.index = index;
+          }
+        });
+      }
     }
     return retVal;
   }
@@ -73,18 +120,33 @@ class DiagramManager{
     return this._listOFDiagrams[this._diagramsID.last];
   }
 
-  Future<List<DiagramVisObject>> reDrawDiagram([String diagramID = ""]) async{
+  List<ShapeForm> reDrawDiagram([String diagramID = ""]){
     if(diagramID.isEmpty){
       Diagram latestDiagram = this._listOFDiagrams[this._diagramsID.last];
-      latestDiagram.modifyDiagram(
-          this._listOFVisualObjects[this._diagramsID.last]);
-      /*return await latestDiagram.getDiagramsShapesPoints(
+      latestDiagram.modifyDiagram();
+
+      /*if(latestDiagram.valueRanges != null){
+        var copyOfVisualObjects = this._listOFVisualObjects[this._diagramsID.last].copy();
+
+        copyOfVisualObjects.ge
+
+
+      }else {
+        latestDiagram.modifyDiagram(
+            this._listOFVisualObjects[this._diagramsID.last]);
+      }
+          /*return await latestDiagram.getDiagramsShapesPoints(
           this._listOFVisualObjects[this._diagramsID.last]
       );*/
-      return null;
+      */
     }else{
-
+      this._listOFDiagrams[diagramID].modifyDiagram();
+      return this._listOFDiagrams[diagramID].getDiagramsShapesPoints(this._listOFDiagrams[diagramID].actualDataObject);
     }
+  }
+
+  void set actDiagramNewValueRange(List<RangeMath<double>> newRanges){
+    this.getLatestDiagram().valueRanges = newRanges;
   }
 
   void removeDiagramByID(String ID){
@@ -100,12 +162,91 @@ class DiagramManager{
   }
 
   Diagram addDiagram(VisualObject diagramData, [MatrixValueRepresentation wayToCreateSegments = null]){
-    if(this._listOFDiagrams.containsKey(diagramData.id))
-      throw new StateError("Alredy have a diagram with the give ID{${diagramData.id}}. List of diagrams: ${this._checkActualDiagram()}");
+    this._diagramsID.add(MathFunc.generateUniqueID(DiagramManager.listOfIDs));
 
-    this._diagramsID.add(diagramData.id);
-    this._listOFVisualObjects[diagramData.id] = diagramData;
-    return this._listOFDiagrams[diagramData.id] = new Diagram(DiagramType.basic, diagramData, wayToCreateSegments);
+    if(!_defaultOrder.containsKey(this._diagramsID.last)){
+      this._defaultOrder[this._diagramsID.last] = new Map<String, int>();
+      diagramData.performFunctionOnChildren((String groupKey, VisualObject actGroup) {
+        this._defaultOrder[this._diagramsID.last][actGroup.label.id] = actGroup.label.index;
+
+        actGroup.performFunctionOnChildren((String blockKey, VisualObject actBlock) {
+          this._defaultOrder[this._diagramsID.last][actBlock.id] = actBlock.label.index;
+
+          actBlock.performFunctionOnChildren((String barKey, VisualObject actBar) {
+            this._defaultOrder[this._diagramsID.last][actBar.id] = actBar.label.index;
+          });
+        });
+      });
+    }
+
+    return this._listOFDiagrams[this._diagramsID.last] = new Diagram(DiagramType.basic, diagramData, wayToCreateSegments);
+  }
+
+  Diagram createEmptyDiagram(){
+    this._diagramsID.add(MathFunc.generateUniqueID(DiagramManager.listOfIDs));
+    return this._listOFDiagrams[this._diagramsID.last] = new Diagram(DiagramType.basic);
+  }
+
+  Diagram createDiagram(String dataObjectID){
+    var objects = this._dataProcessing.getInputDataVisualObject(dataObjectID);
+
+    this.addDiagram(objects, latestRepresentation);
+  }
+
+  VisualObject getVisObjectForDiagram(Diagram diagram, String ID){
+
+    try {
+      if(diagram.dataObjects[ID] == null){
+
+        var retVal = this._dataProcessing.getInputDataVisualObject(ID);
+        if(!_defaultOrder.containsKey(ID)){
+          this._defaultOrder[ID] = new Map<String, int>();
+          retVal.performFunctionOnChildren((String groupKey, VisualObject actGroup) {
+            this._defaultOrder[ID][actGroup.label.id] = actGroup.label.index;
+
+            actGroup.performFunctionOnChildren((String blockKey, VisualObject actBlock) {
+              this._defaultOrder[ID][actBlock.id] = actBlock.label.index;
+
+              actBlock.performFunctionOnChildren((String barKey, VisualObject actBar) {
+                this._defaultOrder[this._diagramsID.last][actBar.id] = actBar.label.index;
+              });
+            });
+          });
+        }
+
+        return retVal;
+
+      }else{
+        if(this._dataProcessing.inputDataChanged[ID]){
+
+          var retVal = this._dataProcessing.getInputDataVisualObject(ID);
+          if(!_defaultOrder.containsKey(ID)){
+            this._defaultOrder[ID] = new Map<String, int>();
+            retVal.performFunctionOnChildren((String groupKey, VisualObject actGroup) {
+              this._defaultOrder[ID][actGroup.label.id] = actGroup.label.index;
+
+              actGroup.performFunctionOnChildren((String blockKey, VisualObject actBlock) {
+                this._defaultOrder[ID][actBlock.id] = actBlock.label.index;
+
+                actBlock.performFunctionOnChildren((String barKey, VisualObject actBar) {
+                  this._defaultOrder[this._diagramsID.last][actBar.id] = actBar.label.index;
+                });
+              });
+            });
+          }
+
+          return retVal;
+
+        }else{
+          return diagram.dataObjects[ID];
+        }
+      }
+
+    }catch(error, stacktrace){
+      _log.sender.warning(error);
+      return this._dataProcessing.getInputDataVisualObject(ID);
+    }
+
   }
 
   List<String> get allActualDiagramID => this._diagramsID;
@@ -243,6 +384,52 @@ class DiagramManager{
       }
     });
     return result;
+  }
+
+  List<ShapeForm> reDrawLatestDiagram() {
+    return this.reDrawDiagram(this.latestActualDiagramID);
+  }
+
+  void resetElementsDefaultOrder(String latestActualDiagramID, [bool updateRequired = false]) {
+    if(updateRequired){
+      this._defaultOrder[latestActualDiagramID] = new Map<String, int>();
+      this.getDiagramByID(latestActualDiagramID).actualDataObject.performFunctionOnChildren((String groupKey, VisualObject actGroup) {
+        this._defaultOrder[this._diagramsID.last][actGroup.label.id] = actGroup.label.index;
+
+        actGroup.performFunctionOnChildren((String blockKey, VisualObject actBlock) {
+          this._defaultOrder[this._diagramsID.last][actBlock.id] = actBlock.label.index;
+
+          actBlock.performFunctionOnChildren((String barKey, VisualObject actBar) {
+            this._defaultOrder[this._diagramsID.last][actBar.id] = actBar.label.index;
+          });
+        });
+      });
+    }else {
+      var actVisData = this
+          .getLatestDiagram()
+          .actualDataObject;
+      this._defaultOrder[latestActualDiagramID].forEach((String id, int index) {
+        if (id.contains("_")) {
+          var idParts = id.split('_');
+          if (idParts.length < 3) {
+            actVisData
+                .getChildByIDs(idParts[0], 1, id)
+                .label
+                .index = index;
+          } else {
+            actVisData
+                .getChildByIDs(idParts[0], 2, "${idParts[0]}_${idParts[1]}", id)
+                .label
+                .index = index;
+          }
+        } else {
+          actVisData
+              .getChildByIDs(id)
+              .label
+              .index = index;
+        }
+      });
+    }
   }
 
 }

@@ -1,57 +1,50 @@
-<style is="custom-style">
+<material-content>
+    <header class="material-header shadow">
+        <div class="material-header-row">
+            <material-button icon (trigger)="mainSideBar.toggle()">
+                <material-icon icon="menu" ></material-icon>
+            </material-button>
+            <span class="material-header-title" >TabularVis</span>
+            <div class="material-spacer"></div>
+            <material-button icon (click)="switchContent($event)">
+                <material-icon id="switchContentSelector" [icon]="selectedContentIcon"></material-icon>
+            </material-button>
+        </div>
+    </header>
+    <div id="draw-area" class="fit-content hidden-overflow">
+        <div [ngSwitch]="selectedContent">
+            <template ngSwitchCase="visualization">
+                <vis-area #visualizationMainDrawer (requestToReDrawLatestDiagram)="initiateDiagramRedraw($event)"></vis-area>
+            </template>
+            <template ngSwitchCase="table">
+                <data-grid #tableMainDrawer (requestToChangeDiagram)="changeContent($event)"></data-grid>
+            </template>
+        </div>
+    </div>
+</material-content>
 
-    :host {
-        --primary-color: #0E1F2B;
-    }
+<!--<modal [visible]="showBrowserWarningDialog">
+    <material-dialog class="basic-dialog">
 
-    #draw-area{
-        overflow: hidden;
-        background-color: #FBFAF4;
-    }
+        <div id="browser_compatibility_error_message_header" class="center-justified horizontal layout">
+            <iron-icon class="error" icon="error-outline"></iron-icon><h2>Your browser is currently not supported</h2><iron-icon class="error" icon="error-outline"></iron-icon>
+        </div>
+        <div>Please switch to the latest Chrome browser to enjoy fully enjoy the web-application</div>
+        <div>If you continue you can experience that some functionality is not working properly</div>
 
+        <div footer>
+            <material-button autoFocus
+                             clear-size
+                             (trigger)="showBasicDialog = false"
+                             class="white">
+                Continue
+            </material-button>
+        </div>
 
-    #grid{
-        height: 100%;
-        width: 100%;
-        background: white;
-        display: block;
-        min-height:100px;
-        border : 1px solid gray;
-        position:absolute;
-    }
+    </material-dialog>
+</modal>!-->
 
-    #page_selector{
-        position: absolute;
-        right:  0;
-        margin: 0 25px 0 0;
-    }
-
-    #navigation-button-container{
-        position: absolute;
-        right: 10px;
-        top: 8px;
-    }
-
-    #navigation-button-container > paper-material{
-        border-radius: 1px;
-        margin-left: 10px;
-    }
-
-    #navigation-button-container > paper-material > a{
-        color: white;
-        text-decoration: none;
-    }
-
-    .top-left-corner{
-        position: static;
-        top: 0;
-        left: 0;
-    }
-
-</style>
-
-
-<paper-header-panel shadow>
+<!--<paper-header-panel shadow>
     <paper-toolbar id="toolbar">
         <paper-icon-button slot="top" icon="menu" (click)="showHideSideBar($event)"></paper-icon-button>
         <span slot="top" main-title class="title">TabularVis</span>
@@ -71,3 +64,16 @@
 
 <paper-toast id="notification" class="fit-bottom"></paper-toast>
 <paper-toast id="notificationError" class="fit-bottom error-toast"></paper-toast>
+
+<paper-dialog id="show_browser_compatibility" modal>
+    <div id="browser_compatibility_error_message_header" class="center-justified horizontal layout">
+        <iron-icon class="error" icon="error-outline"></iron-icon><h2>Your browser is currently not supported</h2><iron-icon class="error" icon="error-outline"></iron-icon>
+    </div>
+    <div>Please switch to the latest Chrome browser to enjoy fully enjoy the web-application</div>
+    <div>If you continue you can experience that some functionality is not working properly</div>
+    <div class="buttons">
+        <paper-button id="close_browser_compatibility_message" raised dialog-confirm autofocus>Continue</paper-button>
+    </div>
+</paper-dialog>
+
+!-->

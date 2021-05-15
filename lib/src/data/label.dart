@@ -44,6 +44,8 @@ class LabelObj implements Label{
   @Deprecated("Replaced by tablePos")
   int _tableCol = 0;
 
+  bool uniqueScale = false;
+
   /// Simple constructor
   ///
   /// Contains the [_name], [_index], [_isRow] and some optional variable
@@ -121,7 +123,7 @@ class LabelObj implements Label{
 
     if(retVal == null){
       Label.groupLabels[this._diagramID][this._groupNum] = new LabelObj(
-          "Group${this._groupNum}",
+          "Group ${this._groupNum}",
           Label.groupLabels[this._diagramID].length + 1, true, this._diagramID);
       retVal = Label.groupLabels[this._diagramID][this._groupNum];
       retVal.tablePos = retVal.index;
@@ -139,12 +141,11 @@ class LabelObj implements Label{
 
   /// Gets new label from this label
   Label get generateNewLabel{
-    var mLabel = this.mainLabel;
-    var newID = this.id + MathFunc.generateUniqueID(VisualObject.listOfIDs);
-    var newName = mLabel.name + (++this._numberOfGeneratedLabel).toString();
+    var newID = "${this.id}_${MathFunc.generateUniqueID(VisualObject.listOfIDs)}";
+    var newName = "${this.mainLabel.name}_${++this._numberOfGeneratedLabel}";
     var newLabel = new LabelObj.ID(newName,newID,this._numberOfGeneratedLabel,
-        mLabel.isRow, this._diagramID);
-    newLabel.tablePos = mLabel.tablePos;
+        this.mainLabel.isRow, this._diagramID);
+    newLabel.tablePos = this.mainLabel.tablePos;
     return newLabel;
   }
 

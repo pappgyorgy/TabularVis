@@ -26,7 +26,7 @@ class Line2DH implements LineMath<Vector3>{
 
   @deprecated
   Line2DH.fromTwoPointVector(Vector2 pointOne, Vector2 pointTwo, {HCoordinate3D planeNormal}){
-    var difference = pointTwo.clone().sub(pointOne);
+    var difference = pointTwo - pointOne;
     double m, b;
     if (difference.x != 0) {
       m = difference.y / difference.x;
@@ -141,7 +141,7 @@ class Line2DH implements LineMath<Vector3>{
         this._planeNormal.getDescartesCoordinate()
     );
 
-    var pointTwo = new HCoordinate2D.fromDescartesCoordinate(pointDesc.clone().add(newPerpendicularLineDirectionVector.xy));
+    var pointTwo = new HCoordinate2D.fromDescartesCoordinate(pointDesc + newPerpendicularLineDirectionVector.xy);
 
     return new Line2DH.fromTwoHPoint(point as HCoordinate2D, pointTwo, planeNormal: this._planeNormal);
   }

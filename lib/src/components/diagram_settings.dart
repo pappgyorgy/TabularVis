@@ -1,84 +1,140 @@
 import 'dart:async';
 import 'dart:html';
-import 'package:angular2/angular2.dart';
+import 'package:angular/angular.dart';
 import 'package:angular_components/angular_components.dart';
 
-import '../../tabular_vis.dart';
+import 'package:bezier_simple_connect_viewer/bezier_simple_connect_viewer.dart';
 
-import 'paper_tab_selected_directive.dart';
-import 'paper_radio_roup_selected_directive.dart';
-
-import 'package:polymer_elements/paper_slider.dart';
-import 'package:polymer_elements/paper_card.dart';
-import 'package:polymer_elements/paper_tabs.dart';
-import 'package:polymer_elements/paper_button.dart';
-import 'package:polymer_elements/paper_header_panel.dart';
-import 'package:polymer_elements/iron_pages.dart';
-import 'package:polymer_elements/paper_toggle_button.dart';
-import 'package:polymer_elements/paper_toolbar.dart';
-import 'package:polymer_elements/paper_dropdown_menu.dart';
-import 'package:polymer_elements/paper_listbox.dart';
-import 'package:polymer_elements/paper_radio_group.dart';
-import 'package:polymer_elements/paper_radio_button.dart';
-import 'package:polymer_elements/paper_scroll_header_panel.dart';
-import 'package:polymer_elements/iron_flex_layout_classes.dart';
-import 'package:polymer_elements/iron_icon.dart';
-import 'package:three/three.dart' show Color;
+import 'package:angular_components/app_layout/material_persistent_drawer.dart';
 import 'package:color_picker/color_picker.dart';
-import 'package:polymer_elements/paper_dialog.dart';
-import 'package:polymer_elements/paper_drawer_panel.dart';
 
-import 'slider_value.dart';
+import 'input_slider.dart';
 import 'bezier_curve_settings.dart';
+import 'color-input.dart';
+
+class SortingAlgorithm{
+
+  final String label;
+  bool selected;
+  int value;
+
+  SortingAlgorithm(this.label, this.selected, this.value);
+}
 
 @Component(
   selector: "diagram-settings",
   templateUrl: "template/diagram_settings.html",
-  directives: const <dynamic>[PaperTabsSelectedDirective, PaperRadioGroupSelectedDirective, BezierCurveSettings, materialDirectives],
-  providers: const <dynamic>[materialDirectives]
+  directives: const <dynamic>[BezierCurveSettings, materialDirectives, InputSlider, ColorInput, coreDirectives,],
+  providers: const <dynamic>[materialProviders],
+  styleUrls: const ['template/scss/common.css', 'template/scss/diagram_settings.css'],
 )
-class DiagramSettings implements AfterViewInit, DoCheck, OnDestroy{
+class DiagramSettings implements AfterViewInit, OnDestroy{
   final Application _application;
   dynamic selectedSettingPage = 0;
   dynamic selectedAlgorithm = "0";
   bool isSortEnabled = false;
   bool _elementInitialized = false;
   bool _elementInTemplateInit = false;
+  bool avoidDefault = true;
+  bool showDialog = false;
+  bool enableScaling = false;
+  bool enableHeatmap = false;
+  bool enableGroupLabeling = false;
+  bool enableEdgeBundling = false;
 
   StreamController<bool> _lockSidebar = new StreamController<bool>();
+
+  bool lockSidebar = false;
+
+  VisualObject groupsContainer;
+
+  @Input()
+  String selectedSettings = "diagram";
 
   @Output()
   Stream<bool> get lockSideBar => _lockSidebar.stream;
 
-  PaperDrawerPanel drawer;
+  @ViewChild("connectionDirRadioGroup") MaterialRadioGroupComponent connectionDirRadioGroup;
 
-  PaperSlider segmentOneSliderElement;
-  PaperSlider segmentTwoSliderElement;
+  double crest;
+  double bezier_radius;
+  double bezier_radius_purity;
 
-  IronIcon segmentOneColor;
-  IronIcon segmentTwoColor;
-  IronIcon connectionColor;
+  int segmentOneSlider = 0;
+  void segmentOneSliderChange(num value){
+    this.segmentOneSlider = value.toInt();
+    //selectedConnection.segmentOne.parent.label.index = this.segmentOneSlider;
+    this.changeElementIndex(1,value);
+  }
+  int barInSegmentOneSlider = 0;
+  void barInSegmentOneSliderChange(num value){
+    this.barInSegmentOneSlider = value.toInt();
+    //selectedConnection.segmentOne.label.index = this.barInSegmentOneSlider;
+    this.changeElementIndex(3,value);
+  }
+  int groupOneSlider = 0;
+  void groupOneSliderChange(num value){
+    this.groupOneSlider = value.toInt();
+    //selectedConnection.segmentOne.parent.label.groupLabel.index = groupOneSlider;
+    this.changeElementIndex(5,value);
+  }
 
-  SliderValue crest;
-  SliderValue bezier_radius;
-  SliderValue bezier_radius_purity;
+  int segmentTwoSlider = 0;
+  void segmentTwoSliderChange(num value){
+    this.segmentTwoSlider = value.toInt();
+    //selectedConnection.segmentTwo.parent.label.index = this.segmentTwoSlider;
+    this.changeElementIndex(2,value);
+  }
+  int barInSegmentTwoSlider = 0;
+  void barInSegmentTwoSliderChange(num value){
+    this.barInSegmentTwoSlider = value.toInt();
+    //selectedConnection.segmentTwo.label.index = this.barInSegmentTwoSlider;
+    this.changeElementIndex(4,value);
+  }
+  int groupTwoSlider = 0;
+  void groupTwoSliderChange(num value){
+    this.groupTwoSlider = value.toInt();
+    //selectedConnection.segmentTwo.parent.label.groupLabel.index = groupTwoSlider;
+    this.changeElementIndex(6,value);
+  }
 
-  SliderValue segmentOneSlider;
-  SliderValue barInSegmentOneSlider;
-  SliderValue groupOneSlider;
+  double spaceConnAndBlocks = 0.0;
+  void spaceConnAndBlocksChange(num value){
+    this.spaceConnAndBlocks = value.toDouble();
+    this._application.changeDiagramLooks(1,this.spaceConnAndBlocks);
+  }
+  double blockDistance = 2.0;
+  void blockDistanceChange(num value){
+    this.blockDistance = value.toDouble();
+    this._application.changeDiagramLooks(2, this.blockDistance);
+  }
+  double lineWidth = 0.3;
+  void lineWidthChange(num value){
+    this.lineWidth = value.toDouble();
+    this._application.changeDiagramLooks(3,this.lineWidth);
+  }
 
-  SliderValue segmentTwoSlider;
-  SliderValue barInSegmentTwoSlider;
-  SliderValue groupTwoSlider;
+  int segmentOneSliderMax = 1;
+  int barInSegmentOneSliderMax = 1;
+  int groupOneSliderMax = 1;
 
-  SliderValue spaceConnAndBlocks;
-  SliderValue blockDistance;
-  SliderValue lineWidth;
+  int segmentTwoSliderMax = 1;
+  int barInSegmentTwoSliderMax = 1;
+  int groupTwoSliderMax = 1;
 
-  PaperDialog colorPickerContainer;
+  double ticksMinValue = 0.0;
+  double ticksMaxValue = 100.0;
+  int ticksDivideNumberOfParts = 4;
+  double ticksSteps = 25.0;
+  List<double> listOfTicksValue = [];
+
+  bool colorPickerContainerVisibility;
   ColorPicker largeColorPicker = new ColorPicker(256);
 
   HtmlElement colorPickerActualTarget;
+
+  SelectionModel sortingAlgorithmSelectionModel = new SelectionModel.single();
+  List<SortingAlgorithm> sortingAlgorithmsOptions = new List();
 
   Label segmentOne;
   Label segmentTwo;
@@ -88,9 +144,59 @@ class DiagramSettings implements AfterViewInit, DoCheck, OnDestroy{
   Label groupTwo;
   VisConnection _selectedConnection;
 
+  int selectedSortingAlgorithm = 0;
   String connectionsDirection = "none";
-  PaperToggleButton enableConnectionsDirection;
+  bool enableConnectionsDirection;
+  bool sidebarLockStatus = false;
+  bool enableSegmentRandomColor = false;
+  bool showDiagramTicksToggleStatus = false;
+  bool enableValueColorRepresentationToggleStatus = false;
+  bool isConnectionDirectionEnabled = false;
+  bool unifiedConnectionThickness = false;
+  bool setUnifiedConnectionColorStatus = false;
+  bool poincareDiskModel = false;
+  String selectedDialogOption = "default";
+  String information = "";
+  String selectedTicksSettingsTab = "general";
+  VisualObject listOfVisualObject;
 
+  SelectionModel<dynamic> itemSelection =
+    new SelectionModel.single();
+
+
+  Color get minColor => ConnectionVis.minColor;
+  Color get maxColor => ConnectionVis.maxColor;
+  Color get unifiedColor => ConnectionVis.unifiedColor;
+
+  void changeUnifiedColor(Color color){
+    ConnectionVis.unifiedColor = color;
+    setAllConnectionColor(true);
+  }
+
+  void minColorChange(Color color){
+    ConnectionVis.minColor = color;
+    enableValueColorRepresentation(true);
+  }
+
+  void maxColorChange(Color color){
+    ConnectionVis.maxColor = color;
+    enableValueColorRepresentation(true);
+  }
+
+  void segOneColChange(Color color){
+    this.selectedConnection.config.segmentOneColor = color;
+    this._application.redrawLatestDiagram();
+  }
+
+  void segTwoColChange(Color color){
+    this.selectedConnection.config.segmentTwoColor = color;
+    this._application.redrawLatestDiagram();
+  }
+
+  void connColChange(Color color){
+    this.selectedConnection.config.connectionColor = color;
+    this._application.redrawLatestDiagram();
+  }
 
   DiagramSettings(this._application){
     /*this.crest = new SliderValue(0.5,0.5,0.0,2.0,
@@ -100,7 +206,7 @@ class DiagramSettings implements AfterViewInit, DoCheck, OnDestroy{
     this.bezier_radius_purity = new SliderValue(0.75,0.75,-2.0,2.0,
             (num value){this._application.changeBezierParam(3,value);});*/
 
-    this.segmentOneSlider = new SliderValue(1,1,1,10,
+    /*this.segmentOneSlider = new SliderValue(1,1,1,10,
             (int value){this.changeElementIndex(1,value);});
     this.barInSegmentOneSlider = new SliderValue(1,1,1,10,
             (int value){this.changeElementIndex(3,value);});
@@ -119,20 +225,38 @@ class DiagramSettings implements AfterViewInit, DoCheck, OnDestroy{
     this.blockDistance = new SliderValue(1.5,1.5,0.0,1.0,
             (num value){this._application.changeDiagramLooks(2,value);});
     this.lineWidth = new SliderValue(0.3,0.3,0.01,1.0,
-            (num value){this._application.changeDiagramLooks(3,value);});
+            (num value){this._application.changeDiagramLooks(3,value);});*/
 
     if(!this._application.isListenConnectionStream){
-      //this._application.connectionData.listen(openSelectedConnectionSetting);
-      //this._application.isListenConnectionStream = true;
+      this._application.connectionData.listen(openSelectedConnectionSetting);
+      this._application.isListenConnectionStream = true;
     }
 
-    openSelectedConnectionSetting(this._application.defaultConnection);
+    /*var conn = this._application.defaultConnection;
+    openSelectedConnectionSetting(conn);
+    this.groupsContainer = this._application.getActualDiagramVisualObject();*/
+
+    this.listOfTicksValue.add(10.0);
+    this.listOfTicksValue.add(12.5);
+    this.listOfTicksValue.add(75.0);
+
+    this.listOfVisualObject = this._application.getActualDiagramVisualObject();
+
+    this.sortingAlgorithmSelectionModel.selectionChanges.listen(this.changeSortAlgorithm);
+
+    this.sortingAlgorithmsOptions.add(new SortingAlgorithm("Hill climbing", false, 0));
+    this.sortingAlgorithmsOptions.add(new SortingAlgorithm("Min Conflict", false, 1));
+    this.sortingAlgorithmsOptions.add(new SortingAlgorithm("Cross entropy", false, 2));
+    this.sortingAlgorithmsOptions.add(new SortingAlgorithm("Cross entropy min conflict", false, 3));
+    this.sortingAlgorithmsOptions.add(new SortingAlgorithm("Cross entropy mod", false, 4));
+    this.sortingAlgorithmsOptions.add(new SortingAlgorithm("Simulated annealing", false, 5));
+    this.sortingAlgorithmsOptions.add(new SortingAlgorithm("Bees algorithm", false, 6));
 
   }
 
-  void lockDiagramSettingsSidebar(Event event){
-    PaperToggleButton enableSegmentRandomColor = event.target as PaperToggleButton;
-    this._lockSidebar.add(enableSegmentRandomColor.checked);
+  void lockDiagramSettingsSidebar(bool status){
+    sidebarLockStatus = status;
+    this._lockSidebar.add(sidebarLockStatus);
   }
 
   void applySelectedColor(Event event){
@@ -160,7 +284,7 @@ class DiagramSettings implements AfterViewInit, DoCheck, OnDestroy{
 
   void setSelectedColor(Event event){
     applySelectedColor(event);
-    colorPickerContainer.close();
+    colorPickerContainerVisibility = false;
     if(colorPickerActualTarget.id != "minColor"
       && colorPickerActualTarget.id != "maxColor"
       && colorPickerActualTarget.id != "unifiedColor") {
@@ -172,97 +296,19 @@ class DiagramSettings implements AfterViewInit, DoCheck, OnDestroy{
     largeColorPicker.infoBox.color = new ColorValue.fromRGB(75,75,75);
     largeColorPicker.infoBox.refresh();
     applySelectedColor(event);
-    colorPickerContainer.close();
+    colorPickerContainerVisibility = false;
     this._application.redrawLatestDiagram();
-  }
-
-  void openBy(Event event) {
-    HtmlElement target;
-    if(event.target is PaperButton){
-      target = event.target as HtmlElement;
-    }else{
-      target = ((event.target as HtmlElement).parent.parent) as HtmlElement;
-    }
-    List<double> colorList;
-    colorPickerActualTarget = target;
-    if(target.id == "segOne"){
-      colorList = this.selectedConnection.getSegmentConfig(this.selectedConnection.segmentOneID);
-    }else if(target.id == "segTwo"){
-      colorList = this.selectedConnection.getSegmentConfig(this.selectedConnection.segmentTwoID);
-    }else if(target.id == "connectionColor"){
-      colorList = this.selectedConnection.getConnectionConfig();
-    }else if(target.id == "minColor"){
-      colorList = [ConnectionVis.minColor.r, ConnectionVis.minColor.g, ConnectionVis.minColor.b];
-    }else if(target.id == "maxColor"){
-      colorList = [ConnectionVis.maxColor.r, ConnectionVis.maxColor.g, ConnectionVis.maxColor.b];
-    }else if(target.id == "unifiedColor"){
-      colorList = [ConnectionVis.unifiedColor.r, ConnectionVis.unifiedColor.g, ConnectionVis.unifiedColor.b];
-    }else{
-      throw new StateError("Wrong button");
-    }
-
-    target.querySelector("iron-icon").style.color = "rgba(${(colorList[0] * 255).toInt()}, ${(colorList[1] * 255).toInt()}, ${(colorList[2] * 255).toInt()}, 1.0)";
-
-    largeColorPicker.infoBox.color = new ColorValue.fromRGB((colorList[0] * 255).toInt(), (colorList[1] * 255).toInt(), (colorList[2] * 255).toInt());
-    largeColorPicker.infoBox.refresh();
-
-    colorPickerContainer.positionTarget = target;
-    colorPickerContainer.open();
   }
 
   @override
   void ngAfterViewInit() {
-    this._elementInitialized = true;
-    this.colorPickerContainer = querySelector("#color_picker_container") as PaperDialog;
-    largeColorPicker = new ColorPicker(256);
-    this.colorPickerContainer.nodes.insert(0, largeColorPicker.element);
-    largeColorPicker.element.style.width = "340px";
-    largeColorPicker.element.style.padding = "0px";
-
-    (largeColorPicker.element.querySelectorAll("input") as List<InputElement>).forEach((InputElement input){
-      input.style.width = "30px";
-    });
-
-    this.drawer = querySelector("#drawer3") as PaperDrawerPanel;
+    avoidDefault = true;
   }
 
   String getSegmentColor(String ID){
     var segmentColor = this.selectedConnection.getSegmentConfig(ID);
     var color = new Color.fromArray(segmentColor);
     return color.getContextStyle();
-  }
-
-  @override
-  void ngDoCheck() {
-    if(selectedSettingPage == "4" && !_elementInTemplateInit && this.selectedConnection != null){
-      this.segmentOneSliderElement = querySelector("#segmentOnePosSlider") as PaperSlider;
-      this.segmentTwoSliderElement = querySelector("#segmentTwoPosSlider") as PaperSlider;
-
-      this.segmentOneColor = querySelector("#segmentOneColorIcon") as IronIcon;
-      this.segmentTwoColor = querySelector("#segmentTwoColorIcon") as IronIcon;
-      this.connectionColor = querySelector("#connectionColorIcon") as IronIcon;
-
-      this.segmentOneColor.style.color = this.getSegmentColor(this.selectedConnection.segmentOneID);
-      this.segmentTwoColor.style.color = this.getSegmentColor(this.selectedConnection.segmentTwoID);
-      this.connectionColor.style.color = new Color.fromArray(this.selectedConnection.getConnectionConfig()).getContextStyle();
-
-
-      if(this.segmentOneSlider.maxValue < 2){
-        segmentOneSliderElement.disabled = true;
-        this.segmentOneSlider.maxValue = 1;
-      }
-
-      if(this.segmentTwoSlider.maxValue < 2){
-        segmentTwoSliderElement.disabled = true;
-        this.segmentTwoSlider.maxValue = 1;
-      }
-
-      _elementInTemplateInit = true;
-    }else if(selectedSettingPage == "1" && enableConnectionsDirection == null){
-      this.enableConnectionsDirection = querySelector("#enable_connections_direction") as PaperToggleButton;
-    } else if(selectedSettingPage != "4" || (selectedSettingPage == "4" && this.selectedConnection != null)){
-      _elementInTemplateInit = false;
-    }
   }
 
   @override
@@ -279,30 +325,51 @@ class DiagramSettings implements AfterViewInit, DoCheck, OnDestroy{
     this._application.applySegmentsColor(this.selectedConnection, 2);
   }
 
-  void setAllConnectionColor(Event event){
-    PaperToggleButton enableSegmentRandomColor = event.target as PaperToggleButton;
-    this._application.setAllConnectionsColor(enableSegmentRandomColor.checked);
+  void setAllConnectionColor(bool newStatus){
+    this.setUnifiedConnectionColorStatus = newStatus;
+    this._application.setAllConnectionsColor(this.setUnifiedConnectionColorStatus);
   }
 
-  void showDiagramTicks(Event event){
-    PaperToggleButton showDiagramTicksButton = event.target as PaperToggleButton;
-    this._application.showDiagramTicks(showDiagramTicksButton.checked);
+  void showDiagramTicks(bool newStatus){
+    this.showDiagramTicksToggleStatus = newStatus;
+    this._application.showDiagramTicks(this.showDiagramTicksToggleStatus);
   }
 
+  void showDiagramGroupLabel(bool newStatus){
+    this.enableGroupLabeling = newStatus;
+    this._application.showDiagramGroupLabel(newStatus);
+  }
 
-  void radioButtonChanged(Event event){
-    PaperRadioButton radioGroup = event.target as PaperRadioButton;
-    //print("${radioGroup.name}");
-    if(radioGroup.name == "a"){
-      this._application.changeWayToDrawDiagram(0);
+  void changeConnectionCurveType(bool newStatus){
+    this.enableEdgeBundling = newStatus;
+    DiagramManager.connectionType = this.enableEdgeBundling
+        ? ShapeType.edgeBundle
+        : ShapeType.bezier;
+    this._application.changeDiagramsConnectionsCurveType();
+  }
+
+  void showHeatmap(bool newStatus){
+    this.enableHeatmap = newStatus;
+    //TODO add actual heatmap feature
+  }
+
+  void applyScaling(bool newStatus){
+    this.enableScaling = newStatus;
+    //TODO add actual scaling feature
+  }
+
+  void changeDiagramLineType(bool newStatus){
+    //this.poincareDiskModel = newStatus;
+    if(!newStatus){
+      this._application.changeWayToDrawLinesInDiagram(0);
     }else{
-      this._application.changeWayToDrawDiagram(1);
+      this._application.changeWayToDrawLinesInDiagram(1);
     }
   }
 
-  void connectionThicknessChanged(Event event){
-    PaperToggleButton connectionThicknessButton = event.target as PaperToggleButton;
-    if(!connectionThicknessButton.checked){
+  void connectionThicknessChanged(bool newStatus){
+    //this.unifiedConnectionThickness = newStatus;
+    if(!newStatus){
       this._application.changeWayToDrawDiagram(0);
     }else{
       this._application.changeWayToDrawDiagram(1);
@@ -320,9 +387,13 @@ class DiagramSettings implements AfterViewInit, DoCheck, OnDestroy{
   }
 
   void openSelectedConnectionSetting(VisConnection connection){
+    if(this.groupsContainer == null){
+      this.groupsContainer = this._application.getActualDiagramVisualObject();
+    }
+
     this.selectedConnection = connection;
-    groupOne = selectedConnection.segmentOne.parent.label.groupLabel;
-    groupTwo = selectedConnection.segmentTwo.parent.label.groupLabel;
+    groupOne = this.groupsContainer.getChildByIDs(this.selectedConnection.segmentOneID.split('_').first).label;
+    groupTwo = this.groupsContainer.getChildByIDs(this.selectedConnection.segmentTwoID.split('_').first).label;
     segmentOne = selectedConnection.segmentOne.label;
     segmentTwo = selectedConnection.segmentTwo.label;
     segmentOneParent = selectedConnection.segmentOne.parent.label;
@@ -334,109 +405,116 @@ class DiagramSettings implements AfterViewInit, DoCheck, OnDestroy{
     var segmentOneBarMax = selectedConnection.segmentOne.parent.numberOfChildren;
     var segmentTwoBarMax = selectedConnection.segmentTwo.parent.numberOfChildren;
 
-    this.segmentOneSlider.value = segmentOneParent.index;
-    this.barInSegmentOneSlider.value = segmentOne.index;
-    this.groupOneSlider.value = groupOne.index;
+    segmentOneSlider = segmentOneParent.index;
+    barInSegmentOneSlider = segmentOne.index;
+    groupOneSlider = groupOne.index;
 
-    this.segmentTwoSlider.value = segmentTwoParent.index;
-    this.barInSegmentTwoSlider.value = segmentTwo.index;
-    this.groupTwoSlider.value = groupTwo.index;
+    segmentTwoSlider = segmentTwoParent.index;
+    barInSegmentTwoSlider = segmentTwo.index;
+    groupTwoSlider = groupTwo.index;
 
     if(segmentOneMax < 2){
       //this.segmentOneSlider.disabled(true);
-      this.segmentOneSlider.maxValue = 1;
+      segmentOneSliderMax = 1;
     }else{
       //this.segmentOneSlider.disabled(false);
-      this.segmentOneSlider.maxValue = segmentOneMax;
+      segmentOneSliderMax = segmentOneMax;
     }
 
-    this.barInSegmentOneSlider.maxValue = segmentOneBarMax;
-    this.groupOneSlider.maxValue = groupMax;
+    barInSegmentOneSliderMax = segmentOneBarMax;
+    groupOneSliderMax = groupMax;
 
     if(segmentTwoMax < 2){
       //this.segmentTwoSlider.disabled(true);
-      this.segmentTwoSlider.maxValue = 1;
+      segmentTwoSliderMax = 1;
     }else{
       //this.segmentTwoSlider.disabled(false);
-      this.segmentTwoSlider.maxValue = segmentOneMax;
+      segmentTwoSliderMax = segmentOneMax;
     }
 
-    this.barInSegmentTwoSlider.maxValue = segmentTwoBarMax;
-    this.groupTwoSlider.maxValue = groupMax;
+    barInSegmentTwoSliderMax = segmentTwoBarMax;
+    groupTwoSliderMax = groupMax;
 
     //this._application.addNotification(NotificationType.info, "The connection between ${segmentOneParent.name} and ${segmentTwoParent.name} succesfully selected");
   }
 
-  void changeSegmentColorPool(Event event){
-    if(!this._elementInitialized) return;
-    PaperToggleButton enableSegmentRandomColor = event.target as PaperToggleButton;
-    this._application.enableSegmentRandomColor(enableSegmentRandomColor.checked);
+  void changeSegmentColorPool(bool newStatus){
+    this.enableSegmentRandomColor = newStatus;
+    this._application.enableSegmentRandomColor(this.enableSegmentRandomColor);
   }
 
-  void changeSortAlgorithm(Event event){
-    if(!this._elementInitialized) return;
-    PaperRadioButton radioGroup = event.target as PaperRadioButton;
-    this._application.modifySortingSettings(true, int.parse(radioGroup.name));
-    this._application.sortSettingsChanged = true;
+  void changeSortAlgorithm(List<SelectionChangeRecord> items){
+    try {
+      int selected = items.first.added.first;
+      selectedSortingAlgorithm = selected;
+
+      if (!isSortEnabled) return;
+      this._application.modifySortingSettings(true, selectedSortingAlgorithm);
+
+    }catch(e){
+
+    }
+
     this._application.redrawLatestDiagram();
   }
 
-  void enableValueColorRepresentation(Event event){
-    if(!this._elementInitialized) return;
-    PaperToggleButton enableValueColorRepresentation = event.target as PaperToggleButton;
-    this._application.modifyValueRepresentation(enableValueColorRepresentation.checked);
+  void enableValueColorRepresentation(bool newValue){
+    this.enableValueColorRepresentationToggleStatus = newValue;
+    this._application.modifyValueRepresentation(this.enableValueColorRepresentationToggleStatus);
   }
 
-  void enableSortConnection(Event event){
-    if(!this._elementInitialized) return;
-    PaperToggleButton enableSort = event.target as PaperToggleButton;
-    isSortEnabled = enableSort.checked;
-    this._application.modifySortingSettings(isSortEnabled);
+  void enableSortConnection(bool newValue){
+    this.isSortEnabled = newValue;
+    if(!this.isSortEnabled){
+      this.sortingAlgorithmSelectionModel.clear();
+      this.sortingAlgorithmsOptions.forEach((SortingAlgorithm alg) => alg.selected = false);
+
+      this._application.modifySortingSettings(this.isSortEnabled, selectedSortingAlgorithm);
+      this._application.redrawLatestDiagram();
+    }
   }
 
   void changeElementIndex(int elementIndex, num newIndex){
-    if(!this._elementInitialized) return;
     switch(elementIndex){
       case 1:
-          String otherElementWithThisIndex = this.selectedConnection.segmentOne.parent.parent.getElementByIndex(newIndex.toInt());
+          /*String otherElementWithThisIndex = this.selectedConnection.segmentOne.parent.parent.getElementByIndex(newIndex.toInt());
           this.selectedConnection.segmentOne.parent.parent.getChildByID(otherElementWithThisIndex).label.index = segmentOneParent.index;
-          segmentOneParent.index = newIndex.toInt();
+          segmentOneParent.index = newIndex.toInt();*/
+          this._application.changeElementsIndex(groupOne.id, "", newIndex.toInt(), segmentOneParent.index);
         break;
       case 2:
-          String otherElementWithThisIndex = this.selectedConnection.segmentTwo.parent.parent.getElementByIndex(newIndex.toInt());
+          /*String otherElementWithThisIndex = this.selectedConnection.segmentTwo.parent.parent.getElementByIndex(newIndex.toInt());
           this.selectedConnection.segmentTwo.parent.parent.getChildByID(otherElementWithThisIndex).label.index = segmentTwoParent.index;
-          segmentTwoParent.index = newIndex.toInt();
+          segmentTwoParent.index = newIndex.toInt();*/
+          this._application.changeElementsIndex(groupTwo.id, "", newIndex.toInt(), segmentTwoParent.index);
         break;
       case 3:
-          String otherElementWithThisIndex = this.selectedConnection.segmentOne.parent.getElementByIndex(newIndex.toInt());
+          /*String otherElementWithThisIndex = this.selectedConnection.segmentOne.parent.getElementByIndex(newIndex.toInt());
           this.selectedConnection.segmentOne.parent.getChildByID(otherElementWithThisIndex).label.index = segmentOne.index;
-          segmentOne.index = newIndex.toInt();
+          segmentOne.index = newIndex.toInt();*/
+          this._application.changeElementsIndex(groupOne.id, segmentOneParent.id, newIndex.toInt(), segmentOne.index);
         break;
       case 4:
-          String otherElementWithThisIndex = this.selectedConnection.segmentTwo.parent.getElementByIndex(newIndex.toInt());
+          /*String otherElementWithThisIndex = this.selectedConnection.segmentTwo.parent.getElementByIndex(newIndex.toInt());
           this.selectedConnection.segmentTwo.parent.getChildByID(otherElementWithThisIndex).label.index = segmentTwo.index;
-          segmentTwo.index = newIndex.toInt();
+          segmentTwo.index = newIndex.toInt();*/
+          this._application.changeElementsIndex(groupTwo.id, segmentTwoParent.id, newIndex.toInt(), segmentTwo.index);
         break;
       case 5:
-          String otherElementWithThisIndex = this.selectedConnection.segmentOne.parent.parent.parent.getElementByIndex(newIndex.toInt());
-          this.selectedConnection.segmentOne.parent.parent.parent.getChildByID(otherElementWithThisIndex).label.index = groupOne.index;
-          groupOne.index = newIndex.toInt();
+          this._application.changeElementsIndex("", "", newIndex.toInt(), groupOne.index);
         break;
       case 6:
-          String otherElementWithThisIndex = this.selectedConnection.segmentTwo.parent.parent.parent.getElementByIndex(newIndex.toInt());
-          this.selectedConnection.segmentTwo.parent.parent.parent.getChildByID(otherElementWithThisIndex).label.index = groupTwo.index;
-          groupTwo.index = newIndex.toInt();
+        this._application.changeElementsIndex("", "", newIndex.toInt(), groupTwo.index);
         break;
       default:
         break;
     }
-    //this._application.changeShapePosition(1, newIndex);
     this._application.redrawLatestDiagram();
   }
 
+  @Deprecated("")
   void enableConnectionsDirections(Event event){
-    PaperToggleButton enableDirection = event.target as PaperToggleButton;
-    if(enableDirection.checked){
+    if(this.isConnectionDirectionEnabled){
       if(this.connectionsDirection == "row"){
         this._application.connectionsDirectionChange(1);
       }else{
@@ -445,32 +523,76 @@ class DiagramSettings implements AfterViewInit, DoCheck, OnDestroy{
     }else{
       this._application.connectionsDirectionChange(0);
     }
-    this._isConnectionDirectionEnabled = enableDirection.checked;
   }
 
-  void connectionsDirectionChange(Event event){
-    PaperRadioButton radioGroup = event.target as PaperRadioButton;
-    if(radioGroup.name == "row"){
-      this._application.connectionsDirectionChange(1);
-    }else if(radioGroup.name == "col"){
-      this._application.connectionsDirectionChange(2);
+  void connectionsDirectionChange(String newValue){
+    if(!avoidDefault && newValue != connectionsDirection) {
+      connectionsDirection = newValue;
+      if (connectionsDirection == "row") {
+        this._application.connectionsDirectionChange(1);
+      } else if (connectionsDirection == "col") {
+        this._application.connectionsDirectionChange(2);
+      } else {
+        this._application.connectionsDirectionChange(0);
+      }
     }else{
-      this._application.connectionsDirectionChange(0);
+      avoidDefault = false;
     }
-  }
-
-
-  bool _isConnectionDirectionEnabled = false;
-  bool get isConnectionDirectionEnabled{
-    return _isConnectionDirectionEnabled;
-    /*if(this.enableConnectionsDirection != null){
-      return this.enableConnectionsDirection.checked;
-    }else{
-      return false;
-    }*/
   }
 
   void showSettingsPage(int i) {
     this.selectedSettingPage = i;
+  }
+
+  //Dialog methods
+
+  void changeDialogType(String newDialogOption){
+    this.selectedDialogOption = newDialogOption;
+  }
+
+  void onTicksSettingsTabChange(TabChangeEvent event){
+    this.selectedTicksSettingsTab = event.newIndex == 0 ? "general" : "specific";
+  }
+
+  void applyTickSettings(MouseEvent event){
+    //TODO finish method
+  }
+
+  String get dialogHeader{
+    return this.selectedDialogOption == "ticks" ? "Ticks settings" : this.selectedDialogOption == "scaling" ? "Scaling settings" : this.selectedDialogOption == "heatmap" ? "Heatmap settings" : "Information";
+  }
+
+  void toggleItem(key) {
+    if (itemSelection.isSelected(key)) {
+      itemSelection.deselect(key);
+    } else {
+      itemSelection.select(key);
+    }
+  }
+
+  void changeScalingValue(String id, double newValue, bool group){
+    this.listOfVisualObject.getChildByID(id, group).scaling = newValue/100.0;
+  }
+
+  void changeTickValue(String id, double newValue, bool group){
+    this.listOfVisualObject.getChildByID(id, group).tickIncValue = newValue;
+    this.listOfVisualObject.getChildByID(id, group).tickValueWasModified = true;
+  }
+
+  void requestRedraw(MouseEvent event){
+    print("redraw");
+    this._application.redrawLatestDiagram();
+  }
+
+  //-------------------------------------------------
+
+  final maxHeightDialogLines = <String>[];
+
+  void addMaxHeightDialogLine() {
+    maxHeightDialogLines.add('This is some text!');
+  }
+
+  void removeMaxHeightDialogLine() {
+    maxHeightDialogLines.removeLast();
   }
 }

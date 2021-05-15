@@ -1,6 +1,6 @@
 part of visualizationGeometry;
 
-class ShapeSimple implements ShapeForm {
+class ShapeSimple extends ShapeForm {
 
   List<LineGeom<double, HomogeneousCoordinate>> _lines =
     new List<LineGeom<double, HomogeneousCoordinate>>();
@@ -34,15 +34,17 @@ class ShapeSimple implements ShapeForm {
   int _numberOfDirectionVerticesLower;
   int _directionOffsetLower;
 
-  int _direction = 0;
+  int direction = 0;
 
   Map<String, ShapeForm> _children = new Map<String, ShapeForm>();
 
-  ShapeSimple(this._lines, this._diagram, [this._parent = null]);
+  ShapeSimple.empty(): super._();
+
+  ShapeSimple(this._lines, this._diagram, [this._parent = null]) : super._();
 
   ShapeSimple.fromData(this._diagram, RangeMath<double> range,
       RangeMath<double> radius, [this._parent = null, String key = "",
-      this._is3D = false, this._shapeHeight = 10.0, this._direction = 0]){
+      this._is3D = false, this._shapeHeight = 10.0, this.direction = 0]) : super._(){
 
 
     this._innerRange = new NumberRange.fromNumbers(
@@ -60,8 +62,16 @@ class ShapeSimple implements ShapeForm {
     if(this._diagram.wayToCreateSegments
         == MatrixValueRepresentation.segmentsHeight || true) {
       if (radius != null && radius.length != null) {
-        var radiusUnitValue = this._diagram.maxSegmentRadius /
-            this._diagram.maxValue;
+        var radiusUnitValue = 0.0;
+
+        if(this.dataElement != null && this.dataElement.role == VisualObjectRole.BAR
+            && this.dataElement.parent.label.uniqueScale){
+          radiusUnitValue = this._diagram.maxSegmentRadius
+              / (this.dataElement.parent.getMaxValueOfChildren() * 1.25);
+        }else{
+          radiusUnitValue = this._diagram.maxSegmentRadius
+              / this._diagram.maxValue;
+        }
 
         var segmentOuterCircleRadius = (radius.length as double) *
             radiusUnitValue;
@@ -85,7 +95,7 @@ class ShapeSimple implements ShapeForm {
     this._lines.add(new LineGeom(
         LineType.simple,
         this._diagram,
-        lineSegmentCircle,
+        segmentOuterCircle,
         this._innerRange
     ));
 
@@ -101,23 +111,23 @@ class ShapeSimple implements ShapeForm {
     this._lines.add(new LineGeom(
         LineType.simple,
         this._diagram,
-        segmentOuterCircle,
+        lineSegmentCircle,
         range
     ));
 
     //directions outer side between the segments
-    if(this._direction == 2 || this._direction == 0){
+    if(this.direction == 2 || this.direction == 0){
       this._lines.add(new LineGeom(
           LineType.simple,
           this._diagram,
-          this._diagram.directionCircle,
+          this._diagram.directionCircle.clone(),
           this._innerRange
       ));
     }else{
       this._lines.add(new LineGeom(
           LineType.simple,
           this._diagram,
-          this._diagram.directionCircle,
+          this._diagram.directionCircle.clone(),
           this._innerInnerRange
       ));
     }
@@ -130,7 +140,7 @@ class ShapeSimple implements ShapeForm {
         range
     ));
 
-    if(this._direction == 0){
+    if(this.direction == 0){
       //No direction shape inner
       this._lines.add(new LineGeom(
           LineType.simple,
@@ -154,10 +164,10 @@ class ShapeSimple implements ShapeForm {
     }
   }
 
-  void modifyGeometry(List<RangeMath<double>> ranges,
-      List<SimpleCircle<HomogeneousCoordinate>> circles,
+  void modifyGeometry(RangeMath<double> rangeA, RangeMath<double> rangeB,
       [ShapeForm parent = null, String key = "",
-      bool is3d = false, double height = 10.0]) {
+      bool is3d = false, double height = 10.0,
+        RangeMath<double> textRange, int value, RangeMath<double> blockRange, RangeMath<double> blockRange2]) {
 
       if(parent != null){
         this.parent.children.remove(key);
@@ -168,25 +178,63 @@ class ShapeSimple implements ShapeForm {
       this._is3D = is3d;
       this._shapeHeight = height;
 
-      var segmentOuterCircleRadius = this._diagram.outerSegmentCircle.radius;
+      this._innerRange = new NumberRange.fromNumbers(
+          rangeA.begin + this._diagram.getLineWidthArc(this._diagram.lineSegmentCircle),
+          rangeA.end - this._diagram.getLineWidthArc(this._diagram.lineSegmentCircle));
+
+      this._innerInnerRange = new NumberRange.fromNumbers(
+          this._innerRange.begin + this._diagram.getLineWidthArc(this._diagram.directionOuterLineCircle),
+          this._innerRange.end - this._diagram.getLineWidthArc(this._diagram.directionOuterLineCircle));
+
+      var segmentOuterCircleRadius = this._diagram.segmentCircle.radius;
+      var lineSegmentCircleRadius = this._diagram.lineSegmentCircle.radius;
 
       if(this._diagram.wayToCreateSegments
-          == MatrixValueRepresentation.segmentsHeight){
-        var radius = ranges.last;
+          == MatrixValueRepresentation.segmentsHeight || true) {
+        if (rangeB != null && rangeB.length != null) {
 
-        if(radius != null && radius.length != null){
-          var radiusUnitValue = this._diagram.maxSegmentRadius /
-              this._diagram.maxValue;
+          var radiusUnitValue = 0.0;
 
-          var segmentNewRadiusToAdd = (radius.length as double) * radiusUnitValue;
+          if(this.dataElement != null && this.dataElement.role == VisualObjectRole.BAR
+              && this.dataElement.parent.label.uniqueScale){
+            radiusUnitValue = this._diagram.maxSegmentRadius
+                / this.dataElement.parent.getMaxValueOfChildren();
+          }else{
+            radiusUnitValue = this._diagram.maxSegmentRadius
+                / this._diagram.maxValue;
+          }
 
-          segmentOuterCircleRadius = this._diagram.segmentCircle.radius + segmentNewRadiusToAdd;
+          var newRadius = (rangeB.length as double) *
+              radiusUnitValue;
+
+          segmentOuterCircleRadius += newRadius;
+          lineSegmentCircleRadius += newRadius;
         }
       }
 
-      this._lines.first.lineArc.range = ranges.first;
-      this._lines.last.lineArc.range = ranges.first;
-      this._lines.last.circle.radius = segmentOuterCircleRadius;
+      this._lines[0].lineArc.range = this._innerRange;
+
+      this._lines[1].lineArc.range = this._innerRange;
+      this._lines[1].lineArc.circle.radius = segmentOuterCircleRadius;
+
+      this._lines[2].lineArc.range = rangeA;
+
+      this._lines[3].lineArc.range = rangeA;
+      this._lines[3].lineArc.circle.radius = lineSegmentCircleRadius;
+
+      if(this.direction == 2 || this.direction == 0) {
+        this._lines[4].lineArc.range = this._innerRange;
+      }else{
+        this._lines[4].lineArc.range = this._innerInnerRange;
+      }
+
+      this._lines[5].lineArc.range = rangeA;
+
+      if(this.direction == 0){
+        this._lines[6].lineArc.range = this._innerRange;
+
+        this._lines[7].lineArc.range = rangeA;
+      }
   }
 
   void setChild(ShapeForm child, String ID) {
@@ -269,10 +317,10 @@ class ShapeSimple implements ShapeForm {
 
   Vector3 getInnerPointFromContour(Vector3 a, Vector3 b, Vector3 c){
 
-    var right = (a - b).normalize();
-    var left = (c - b).normalize();
-    var rotateVec = new Vector3(left.y, -left.x, 0.0).normalize();
-    var midVec = (left + right).normalize();
+    var right = (a - b)..normalize();
+    var left = (c - b)..normalize();
+    var rotateVec = new Vector3(left.y, -left.x, 0.0)..normalize();
+    var midVec = (left + right)..normalize();
 
     midVec = midVec * midVec.dot(rotateVec).sign;
 
@@ -303,11 +351,11 @@ class ShapeSimple implements ShapeForm {
     _addLinesToList(retVal, this._lines[5].getLinePoints(this._borderOffset));
     this._numberOfDirectionVertices = retVal.length - (this._numberOfPolygonVertices + this._numberOfBorderVertices);
 
-    var midPoint = this._getDirectionMidPoint(this._direction);
+    var midPoint = this._getDirectionMidPoint(this.direction);
 
     var directionIndicatorHeight = this._diagram.directionCircle.radius - this._diagram.directionUpperCircle.radius;
 
-    if(this._direction == 0){
+    if(this.direction == 0){
 
       _addLinesToList(retVal, this._lines[6].getLinePoints(this._borderOffset).reversed.toList());
       this._directionOffsetLower = retVal.length - (this._numberOfDirectionVertices + this._numberOfPolygonVertices + this._numberOfBorderVertices);
@@ -315,10 +363,10 @@ class ShapeSimple implements ShapeForm {
       _addLinesToList(retVal, this._lines[7].getLinePoints(this._borderOffset).reversed.toList());
       this._numberOfDirectionVerticesLower = retVal.length - (this._numberOfDirectionVertices + this._numberOfPolygonVertices + this._numberOfBorderVertices);
 
-    }if(this._direction == 1){
+    }if(this.direction == 1){
 
       var range = this._lines[2].lineArc.range;
-      var circleForEnd = this._direction == 1 ? this._diagram.directionUpperCircle : this._diagram.directionLowerCircle;
+      var circleForEnd = this.direction == 1 ? (this._diagram.directionUpperCircle.clone()) : this._diagram.directionLowerCircle;
       /*var beginPoint = new Vector3.array(this._diagram.directionCircle.getPointFromPolarCoordinate(range.begin).coordinate.storage as List<double>);
     var endPoint = new Vector3.array(this._diagram.directionCircle.getPointFromPolarCoordinate(range.end).coordinate.storage as List<double>);*/
       var beginPoint = new Vector3.array(circleForEnd.getPointFromPolarCoordinate(range.begin).coordinate.storage as List<double>)..z = 0.0;
@@ -331,6 +379,9 @@ class ShapeSimple implements ShapeForm {
       var newPoint2 = getInnerPointFromContour(beginPoint, midPoint, endPoint);
       var newPoint3 = getInnerPointFromContour(retVal[this._numberOfPolygonVertices + this._numberOfBorderVertices], beginPoint, midPoint);
       var newPoint4 = getInnerPointFromContour(midPoint, endPoint, retVal[this._numberOfPolygonVertices + this._numberOfBorderVertices + this._numberOfDirectionVertices - 1]);
+      //var newPoint4 = beginPoint.clone();
+      //var newPoint2 = beginPoint.clone();
+      //var newPoint3 = beginPoint.clone();
 
       var circleForSecondEnd = circleForEnd.clone()..radius = 137.0;
 
@@ -347,7 +398,7 @@ class ShapeSimple implements ShapeForm {
 
       var listOfPoint = this._diagram.drawCircle.center.getDescartesCoordinate().storage;
       Vector3 middle = new Vector3(listOfPoint[0], listOfPoint[1], 0.0);
-      var midPoint2 = ((newPoint2 - middle).normalize() * modifiedDirectionIndicatorHeight) + newPoint2;
+      var midPoint2 = ((newPoint2 - middle).normalized() * modifiedDirectionIndicatorHeight) + newPoint2;
       var newPoint5 = getInnerPointFromContour(beginPoint, midPoint2, endPoint);
 
       /*var innerInnerRange = this._lines[4].lineArc.range;
@@ -357,23 +408,27 @@ class ShapeSimple implements ShapeForm {
       var newPoint6 = new Vector3.array(this._diagram.directionOuterLineCircle.getPointFromPolarCoordinate(this._innerInnerRange.begin).coordinate.storage as List<double>)..z = 0.0;
       var newPoint7 = new Vector3.array(this._diagram.directionOuterLineCircle.getPointFromPolarCoordinate(this._innerInnerRange.end).coordinate.storage as List<double>)..z = 0.0;
 
-      var newPoint8 = new Vector3.array(this._diagram.directionCircle.getPointFromPolarCoordinate(this._innerRange.begin).coordinate.storage as List<double>)..z = 0.0;
-      var newPoint9 = new Vector3.array(this._diagram.directionCircle.getPointFromPolarCoordinate(this._innerRange.end).coordinate.storage as List<double>)..z = 0.0;
+      var defaultDirectionRadius = Diagram2D.defaultDrawCircle.clone()..radius += this._diagram.directionsHeight;
+      var newPoint8 = new Vector3.array(defaultDirectionRadius.getPointFromPolarCoordinate(this._innerRange.begin).coordinate.storage as List<double>)..z = 0.0;
+      var newPoint9 = new Vector3.array(defaultDirectionRadius.getPointFromPolarCoordinate(this._innerRange.end).coordinate.storage as List<double>)..z = 0.0;
+
+      //var newPoint8 = new Vector3.array(this._diagram.directionCircle.getPointFromPolarCoordinate(this._innerRange.begin).coordinate.storage as List<double>)..z = 0.0;
+      //var newPoint9 = new Vector3.array(this._diagram.directionCircle.getPointFromPolarCoordinate(this._innerRange.end).coordinate.storage as List<double>)..z = 0.0;
 
       retVal.add(newPoint2);
       retVal.add(newPoint3);
       retVal.add(newPoint4);
       retVal.add(midPoint2);
       retVal.add(newPoint5);
-      retVal.add(newPoint6);
-      retVal.add(newPoint7);
+      //retVal.add(newPoint6);
+      //retVal.add(newPoint7);
       retVal.add(newPoint8);
       retVal.add(newPoint9);
 
-    }else if (this._direction == 2){
+    }else if (this.direction == 2){
 
       var range = this._lines[2].lineArc.range;
-      var circleForEnd = this._direction == 1 ? this._diagram.directionUpperCircle : this._diagram.directionLowerCircle;
+      var circleForEnd = this.direction == 1 ? this._diagram.directionUpperCircle : this._diagram.directionLowerCircle;
       /*var beginPoint = new Vector3.array(this._diagram.directionCircle.getPointFromPolarCoordinate(range.begin).coordinate.storage as List<double>);
       var endPoint = new Vector3.array(this._diagram.directionCircle.getPointFromPolarCoordinate(range.end).coordinate.storage as List<double>);*/
       var beginPoint = new Vector3.array(circleForEnd.getPointFromPolarCoordinate(range.begin).coordinate.storage as List<double>)..z = 0.0;
@@ -381,16 +436,20 @@ class ShapeSimple implements ShapeForm {
 
       var listOfPoint = this._diagram.drawCircle.center.getDescartesCoordinate().storage;
       Vector3 middle = new Vector3(listOfPoint[0], listOfPoint[1], 0.0);
-      midPoint = ((midPoint - middle).normalize() * ((directionIndicatorHeight*0.5) - this._diagram.lineWidth)) + midPoint;
-      var midPoint2 = ((midPoint - middle).normalize() * ((-directionIndicatorHeight*0.5) - this._diagram.lineWidth)) + midPoint;
+      midPoint = ((midPoint - middle).normalized() * ((directionIndicatorHeight*0.5) - this._diagram.lineWidth)) + midPoint;
+      //var midPoint2 = ((midPoint - middle).normalized() * ((-directionIndicatorHeight*2) - this._diagram.lineWidth)) + midPoint;
+      var rangeHelper = this._lines[2].lineArc.range;
+      var directionMidPointAngle = range.begin +
+          (range.direction * ((range.length as double) / 2));
+      var midPoint2 = new Vector3.array(circleForEnd.getPointFromPolarCoordinate(directionMidPointAngle).coordinate.storage as List<double>)..z = 0.0;
 
       retVal.add(midPoint);
       retVal.add(endPoint);
       retVal.add(beginPoint);
 
       var differenceBetweenDirectionAndUpperDirection = this._diagram.directionCircle.radius - this._diagram.directionUpperCircle.radius;
-      var newPoint6 = ((beginPoint - middle).normalize() * (directionIndicatorHeight)) + beginPoint;
-      var newPoint7 = ((endPoint - middle).normalize() * (directionIndicatorHeight)) + endPoint;
+      var newPoint6 = ((beginPoint - middle).normalized() * (directionIndicatorHeight)) + beginPoint;
+      var newPoint7 = ((endPoint - middle).normalized() * (directionIndicatorHeight)) + endPoint;
 
       var newPoint5 = getInnerPointFromContour(beginPoint, midPoint2, endPoint);
 
@@ -410,8 +469,8 @@ class ShapeSimple implements ShapeForm {
       retVal.add(newPoint4); // 5
       retVal.add(midPoint2);
       retVal.add(newPoint5); // 7
-      retVal.add(newPoint6);
-      retVal.add(newPoint7); // 9
+      //retVal.add(newPoint6);
+      //retVal.add(newPoint7); // 9
       retVal.add(newPoint8);
       retVal.add(newPoint9); // 11
       retVal.add(newPoint10);
@@ -507,13 +566,13 @@ class ShapeSimple implements ShapeForm {
           vertexColors = <Color>[polygonBaseColor, polygonBaseColor, polygonBaseColor];
         }
       }*/
-      listOfFaces.add(new Face3(
+      listOfFaces.add(new Face3Ext.withNormalsColors(
           this._numberOfBorderVertices + ((this._numberOfPolygonVertices - 1) - i),     // Face first vertex
           this._numberOfBorderVertices + i,                                    // Face second vertex
           this._numberOfBorderVertices + ((this._numberOfPolygonVertices  - 1)- (i + 1)),  // Face third vertex
           vertexNormals, vertexColors
       ));
-      listOfFaces.add(new Face3(
+      listOfFaces.add(new Face3Ext.withNormalsColors(
           this._numberOfBorderVertices + ((this._numberOfPolygonVertices - 1) - (i + 1)),
           this._numberOfBorderVertices + i,
           this._numberOfBorderVertices + i + 1,
@@ -525,13 +584,13 @@ class ShapeSimple implements ShapeForm {
 
     vertexColors = <Color>[borderBaseColor, borderBaseColor, borderBaseColor];
     for(var i = 0; i < this._numberOfPolygonVertices - 1; i++){
-      listOfFaces.add(new Face3(
+      listOfFaces.add(new Face3Ext.withNormalsColors(
           i + this._numberOfBorderVertices, // Face first vertex
           i, // Face second vertex
           i + this._numberOfBorderVertices + 1, // Face third vertex
           vertexNormals, vertexColors
       ));
-      listOfFaces.add(new Face3(
+      listOfFaces.add(new Face3Ext.withNormalsColors(
           i + this._numberOfBorderVertices + 1,
           i,
           i + 1,
@@ -541,13 +600,13 @@ class ShapeSimple implements ShapeForm {
 
     }
 
-    listOfFaces.add(new Face3(
+    listOfFaces.add(new Face3Ext.withNormalsColors(
         (this._numberOfBorderVertices + this._numberOfPolygonVertices) - 1, // Face first vertex
         this._numberOfBorderVertices - 1, // Face second vertex
         this._numberOfBorderVertices, // Face third vertex
         vertexNormals, vertexColors
     ));
-    listOfFaces.add(new Face3(
+    listOfFaces.add(new Face3Ext.withNormalsColors(
         this._numberOfBorderVertices,
         this._numberOfBorderVertices - 1,
         0,
@@ -560,7 +619,7 @@ class ShapeSimple implements ShapeForm {
     var directionBorderStart = directionInnerStart + this._directionOffset;
     var directionShapePointsStart = directionInnerStart + this._numberOfDirectionVertices;
 
-    if(this._direction == 0){
+    if(this.direction == 0){
 
       /*listOfFaces.add(new Face3(
           directionBorderStart + (this._directionOffset + (this._numberOfDirectionVerticesLower - 1)),     // Face first vertex
@@ -569,14 +628,31 @@ class ShapeSimple implements ShapeForm {
           vertexNormals, vertexColors
       ));*/
 
-      for(var i = 0; i < this._polygonOffset - 1; i++){
-        listOfFaces.add(new Face3(
+      /*for(var i = 0; i < this._polygonOffset - 1; i++){
+        listOfFaces.add(new Face3Ext.withNormalsColors(
             directionBorderStart + (this._directionOffset + (this._numberOfDirectionVerticesLower - 1) - i),     // Face first vertex
             directionBorderStart + i,                                    // Face second vertex
             directionBorderStart + (this._directionOffset + (this._numberOfDirectionVerticesLower - 1) - (i+1)),  // Face third vertex
             vertexNormals, vertexColors
         ));
-        listOfFaces.add(new Face3(
+        listOfFaces.add(new Face3Ext.withNormalsColors(
+            directionBorderStart + (this._directionOffset + (this._numberOfDirectionVerticesLower - 1) - (i+1)),
+            directionBorderStart + i,
+            directionBorderStart + i + 1,
+            vertexNormals, vertexColors
+        ));
+      }*/
+
+      vertexColors = <Color>[borderBaseColor, borderBaseColor, borderBaseColor];
+
+      for(var i = 0; i < this._polygonOffset - 1; i++){
+        listOfFaces.add(new Face3Ext.withNormalsColors(
+            directionBorderStart + (this._directionOffset + (this._numberOfDirectionVerticesLower - 1) - i),     // Face first vertex
+            directionBorderStart + i,                                    // Face second vertex
+            directionBorderStart + (this._directionOffset + (this._numberOfDirectionVerticesLower - 1) - (i+1)),  // Face third vertex
+            vertexNormals, vertexColors
+        ));
+        listOfFaces.add(new Face3Ext.withNormalsColors(
             directionBorderStart + (this._directionOffset + (this._numberOfDirectionVerticesLower - 1) - (i+1)),
             directionBorderStart + i,
             directionBorderStart + i + 1,
@@ -587,13 +663,13 @@ class ShapeSimple implements ShapeForm {
       vertexColors = <Color>[connectionColor, connectionColor, connectionColor];
 
       for(var i = 0; i < this._polygonOffset - 1; i++){
-        listOfFaces.add(new Face3(
+        listOfFaces.add(new Face3Ext.withNormalsColors(
             directionInnerStart + (this._directionOffset + (this._numberOfDirectionVerticesLower - 1) - i),     // Face first vertex
             directionInnerStart + i,                                    // Face second vertex
             directionInnerStart + (this._directionOffset + (this._numberOfDirectionVerticesLower - 1) - (i+1)),  // Face third vertex
             vertexNormals, vertexColors
         ));
-        listOfFaces.add(new Face3(
+        listOfFaces.add(new Face3Ext.withNormalsColors(
             directionInnerStart + (this._directionOffset + (this._numberOfDirectionVerticesLower - 1) - (i+1)),
             directionInnerStart + i,
             directionInnerStart + i + 1,
@@ -601,11 +677,22 @@ class ShapeSimple implements ShapeForm {
         ));
       }
 
-    }else if(this._direction == 1){
+
+
+    }else if(this.direction == 1){
 
       // border
 
-      listOfFaces.add(new Face3(
+      vertexColors = <Color>[borderBaseColor, borderBaseColor, borderBaseColor];
+
+      /*listOfFaces.add(new Face3Ext.withNormalsColors(
+          directionShapePointsStart,
+          directionShapePointsStart + 8,
+          directionShapePointsStart + 9,
+          vertexNormals, vertexColors
+      ));*/
+
+      listOfFaces.add(new Face3Ext.withNormalsColors(
           directionShapePointsStart,
           directionShapePointsStart + 2,
           directionBorderStart,
@@ -613,7 +700,7 @@ class ShapeSimple implements ShapeForm {
       ));
 
       for(var i = directionBorderStart; i < directionShapePointsStart - 1; i++){
-        listOfFaces.add(new Face3(
+        listOfFaces.add(new Face3Ext.withNormalsColors(
             directionShapePointsStart,
             i,
             i + 1,
@@ -621,7 +708,7 @@ class ShapeSimple implements ShapeForm {
         ));
       }
 
-      listOfFaces.add(new Face3(
+      listOfFaces.add(new Face3Ext.withNormalsColors(
           directionShapePointsStart,
           directionShapePointsStart - 1,
           directionShapePointsStart + 1,
@@ -633,7 +720,7 @@ class ShapeSimple implements ShapeForm {
       vertexColors = <Color>[connectionColor, connectionColor, connectionColor];
 
       for(var i = directionInnerStart; i < directionBorderStart - 1; i++){
-        listOfFaces.add(new Face3(
+        listOfFaces.add(new Face3Ext.withNormalsColors(
             directionShapePointsStart + 7,
             i,
             i + 1,
@@ -647,41 +734,45 @@ class ShapeSimple implements ShapeForm {
 
       // begins side
 
-      listOfFaces.add(new Face3(
+      listOfFaces.add(new Face3Ext.withNormalsColors(
           directionShapePointsStart + 3,
           directionShapePointsStart + 4,
-          directionShapePointsStart + 10,
+          directionShapePointsStart + 8,
           vertexNormals, vertexColors
       ));
 
-      listOfFaces.add(new Face3(
+      listOfFaces.add(new Face3Ext.withNormalsColors(
           directionShapePointsStart + 3,
-          directionShapePointsStart + 10,
+          directionShapePointsStart + 8,
           directionShapePointsStart + 6,
           vertexNormals, vertexColors
       ));
 
       // end side
 
-      listOfFaces.add(new Face3(
+      listOfFaces.add(new Face3Ext.withNormalsColors(
           directionShapePointsStart + 3,
           directionShapePointsStart + 6,
-          directionShapePointsStart + 11,
+          directionShapePointsStart + 9,
           vertexNormals, vertexColors
       ));
 
-      listOfFaces.add(new Face3(
+      listOfFaces.add(new Face3Ext.withNormalsColors(
           directionShapePointsStart + 3,
-          directionShapePointsStart + 11,
+          directionShapePointsStart + 9,
           directionShapePointsStart + 5,
           vertexNormals, vertexColors
       ));
 
+
 /////////////////////////////////////////////////////////////////////////////////////
-    } else if (this._direction == 2){
+    } else if (this.direction == 2){
 
       //Border
-      listOfFaces.add(new Face3(
+
+      vertexColors = <Color>[borderBaseColor, borderBaseColor, borderBaseColor];
+
+      listOfFaces.add(new Face3Ext.withNormalsColors(
           directionShapePointsStart + 6,
           directionShapePointsStart + 2,
           directionBorderStart,
@@ -689,7 +780,7 @@ class ShapeSimple implements ShapeForm {
       ));
 
       for(var i = directionBorderStart; i < directionShapePointsStart - 1; i++){
-        listOfFaces.add(new Face3(
+        listOfFaces.add(new Face3Ext.withNormalsColors(
             directionShapePointsStart + 6,
             i,
             i + 1,
@@ -697,43 +788,42 @@ class ShapeSimple implements ShapeForm {
         ));
       }
 
-      listOfFaces.add(new Face3(
+      listOfFaces.add(new Face3Ext.withNormalsColors(
           directionShapePointsStart + 6,
           directionShapePointsStart - 1,
           directionShapePointsStart + 1,
           vertexNormals, vertexColors
       ));
 
-
       // Direction part
       vertexColors = <Color>[connectionColor, connectionColor, connectionColor];
 
       // Begin side
-      listOfFaces.add(new Face3(
+      listOfFaces.add(new Face3Ext.withNormalsColors(
           directionShapePointsStart + 7,
           directionShapePointsStart + 4,
-          directionShapePointsStart + 10,
+          directionShapePointsStart + 8,
           vertexNormals, vertexColors
       ));
 
-      listOfFaces.add(new Face3(
+      listOfFaces.add(new Face3Ext.withNormalsColors(
           directionShapePointsStart + 7,
-          directionShapePointsStart + 10,
+          directionShapePointsStart + 8,
           directionShapePointsStart,
           vertexNormals, vertexColors
       ));
 
       // End side
-      listOfFaces.add(new Face3(
+      listOfFaces.add(new Face3Ext.withNormalsColors(
           directionShapePointsStart + 7,
           directionShapePointsStart,
-          directionShapePointsStart + 11,
+          directionShapePointsStart + 9,
           vertexNormals, vertexColors
       ));
 
-      listOfFaces.add(new Face3(
+      listOfFaces.add(new Face3Ext.withNormalsColors(
           directionShapePointsStart + 7,
-          directionShapePointsStart + 11,
+          directionShapePointsStart + 9,
           directionShapePointsStart + 5,
           vertexNormals, vertexColors
       ));
@@ -742,9 +832,9 @@ class ShapeSimple implements ShapeForm {
 
       vertexColors = <Color>[polygonBaseColor, polygonBaseColor, polygonBaseColor];
 
-      listOfFaces.add(new Face3(
+      listOfFaces.add(new Face3Ext.withNormalsColors(
           directionShapePointsStart + 3,
-          directionShapePointsStart + 12,
+          directionShapePointsStart + 10,
           directionInnerStart,
           vertexNormals, vertexColors
       ));
@@ -757,7 +847,7 @@ class ShapeSimple implements ShapeForm {
       ));*/
 
       for(var i = directionInnerStart; i < directionBorderStart - 1; i++){
-        listOfFaces.add(new Face3(
+        listOfFaces.add(new Face3Ext.withNormalsColors(
             directionShapePointsStart + 3,
             i,
             i + 1,
@@ -765,10 +855,10 @@ class ShapeSimple implements ShapeForm {
         ));
       }
 
-      listOfFaces.add(new Face3(
+      listOfFaces.add(new Face3Ext.withNormalsColors(
           directionShapePointsStart + 3,
           directionBorderStart - 1,
-          directionShapePointsStart + 13,
+          directionShapePointsStart + 11,
           vertexNormals, vertexColors
       ));
 
@@ -787,7 +877,7 @@ class ShapeSimple implements ShapeForm {
           vertexNormals, vertexColors
       ));*/
 
-      vertexColors = <Color>[polygonBaseColor, polygonBaseColor, polygonBaseColor];
+      //vertexColors = <Color>[polygonBaseColor, polygonBaseColor, polygonBaseColor];
 
       /*listOfFaces.add(new Face3(
           this._numberOfBorderVertices + this._numberOfPolygonVertices + 3,

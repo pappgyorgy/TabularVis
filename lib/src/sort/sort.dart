@@ -3,7 +3,8 @@ library sortConnection;
 import 'dart:math';
 import 'dart:async';
 import '../data/data_processing.dart';
-import 'package:angular2/core.dart';
+import 'package:angular/core.dart';
+import '../app_logger.dart';
 
 part 'crossEntropy_min_conf.dart';
 part 'crossEntropy.dart';
@@ -16,6 +17,10 @@ part 'bees_algorithm.dart';
 
 @Injectable()
 class SortHandler{
+
+  final AppLogger _log;
+
+  SortHandler(this._log);
 
   SortAlgorithmType defaultType = SortAlgorithmType.hillClimb;
 
@@ -37,7 +42,7 @@ class SortHandler{
   Sort requireSort(VisualObject root, [SortAlgorithmType type = null]){
     type = type == null ? defaultType : type;
     initializeDiagramSortList(root.id);
-    resultOfSorting[root.id].add(new Sort(root, type));
+    resultOfSorting[root.id].add(new Sort(root, type, this._log));
     return resultOfSorting[root.id].last;
   }
 
@@ -52,6 +57,8 @@ class SortHandler{
 
 class Sort {
 
+  final AppLogger _logger;
+
   VisualObject root;
   SortAlgorithmType type;
 
@@ -59,10 +66,10 @@ class Sort {
   int intersectionBeforeSort = 0;
   int intersectionAfterSort = 0;
 
-  Sort(this.root, this.type);
+  Sort(this.root, this.type, this._logger);
 
   VisualObject run() {
-    State sortState = new State.getState(type, root.copy());
+    State sortState = new State.getState(type, root);
 
     SortAlgorithm sortTool = new SortAlgorithm(type);
 
@@ -194,7 +201,7 @@ class Sort {
     throw new StateError("The given ID: $actID is not in the order $orderID");
   }
 
-  void _finalizeSort(State sortResult) {
+  void _finalizeSort2(State sortResult) {
     Map<int, String> orderID = sortResult.orderID;
 
     for (var i = 1; i <= orderID.length; i++) {
@@ -218,6 +225,139 @@ class Sort {
         print(actualElement.label);
       });*/
     };
+
+  }
+
+  void _finalizeSort(State sortResult) {
+
+    var groupContainer = sortResult.diagramElements.rootElement;
+
+    int blockSize = 1000, groupSize = 1000000;
+
+    List<String> finalizedBlocks = new List();
+
+    groupContainer.performFunctionOnChildren((String groupID, VisualObject group){
+      group.performFunctionOnChildren((String blockID, VisualObject block){
+
+        Map<String, List<VisualObject>> barsInTheSameBlock = new Map<String, List<VisualObject>>();
+
+        String otherBlockID = "";
+        block.performFunctionOnChildren((String barID, VisualObject bar){
+          otherBlockID = bar.connection.getOtherSegment(bar).parent.id;
+          if(barsInTheSameBlock[otherBlockID] == null){
+            barsInTheSameBlock[otherBlockID] = new List();
+          }
+          barsInTheSameBlock[otherBlockID].add(bar);
+        });
+
+        Map<int, String> bockIndexAndIDs = new Map<int, String>();
+        List<int> blockIndices = new List();
+
+
+        int index = 0,
+            currentBlockIndex = block.index * blockSize + block.parent.index * groupSize,
+            maxIndex = (groupContainer.numberOfChildren + 1) * groupSize;
+        block.performFunctionOnChildren((String barID, VisualObject bar){
+          var otherBlock = bar.connection.getOtherSegment(bar).parent;
+          index = (otherBlock.index * blockSize) + (otherBlock.parent.index * groupSize);
+          if(index < currentBlockIndex){
+            index += maxIndex;
+          }else if(index == currentBlockIndex){
+            index = maxIndex + block.index * blockSize;
+          }
+
+          bockIndexAndIDs[index] = otherBlock.id;
+          if(!blockIndices.contains(index)){
+            blockIndices.add(index);
+          }
+        });
+
+        blockIndices.sort((int a, int b) => a-b);
+
+        index = block.numberOfChildren;
+        for(int blockIndex in blockIndices){
+          if(finalizedBlocks.contains(bockIndexAndIDs[blockIndex])){
+            if(barsInTheSameBlock[bockIndexAndIDs[blockIndex]].length > 1){
+              Map<int, String> barsIndexAndIDs = new Map<int, String>();
+              List<int> barIndices = new List();
+
+              barsInTheSameBlock[bockIndexAndIDs[blockIndex]].forEach((VisualObject bar){
+                var otherBar = bar.connection.getOtherSegment(bar);
+
+                barsIndexAndIDs[otherBar.index] = bar.id;
+                barIndices.add(otherBar.index);
+              });
+
+              barIndices.sort((int a, int b) => a-b);
+
+              for(int barIndex in barIndices){
+                block.getChildByIDs(barsIndexAndIDs[barIndex]).index = index--;
+              }
+
+            }else{
+              barsInTheSameBlock[bockIndexAndIDs[blockIndex]].first.index = index--;
+            }
+          }else{
+            barsInTheSameBlock[bockIndexAndIDs[blockIndex]].forEach((VisualObject bar){
+              bar.index = index--;
+            });
+          }
+        }
+
+        finalizedBlocks.add(blockID);
+
+        /*Map<int, String> barsIndexAndIDs = new Map<int, String>();
+        List<int> barsIndices = new List(block.numberOfChildren);
+
+        int i = 0,
+            index = 0,
+            currentBlockIndex = block.index * blockSize + block.parent.index * groupSize,
+            maxIndex = (groupContainer.numberOfChildren + 1) * groupSize;
+        block.performFunctionOnChildren((String barID, VisualObject bar){
+          var otherSegment = bar.connection.getOtherSegment(bar);
+          index = (otherSegment.parent.index * blockSize) + (otherSegment.parent.parent.index * groupSize);
+          if(index < currentBlockIndex){
+            index += maxIndex;
+          }else if(index == currentBlockIndex){
+            index = maxIndex + block.index * blockSize;
+          }
+          if(barsIndices.contains(index)){
+            index++;
+          }
+          barsIndexAndIDs[index] = bar.id;
+          barsIndices[i++] = index;
+        });
+
+        barsIndices.sort((int a, int b) => a-b);
+
+        index = block.numberOfChildren;
+        for(int barsIndex in barsIndices){
+          block.getChildByIDs(barsIndexAndIDs[barsIndex]).index = index--;
+        }*/
+
+        int alma = 5;
+      });
+    });
+
+
+
+    /*Map<int, String> orderID = sortResult.orderID;
+
+    for (var i = 1; i <= orderID.length; i++) {
+      var elementID = orderID[i];
+      var actualElement = sortResult.diagramElements.rootElement.getChildByID(
+          elementID);
+
+      var elementChildOrder = _createTemporaryOder(orderID, actualElement);
+
+      elementChildOrder.forEach((Map<int, String> segmentConnectionsOrder) {
+        segmentConnectionsOrder.forEach((int index, String childElementID){
+          var elementToSet = actualElement.getChildByID(childElementID, true);
+          elementToSet.label.index = index;
+          //print(actualElement.label);
+        });
+      });
+    };*/
 
   }
 

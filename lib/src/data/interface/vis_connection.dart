@@ -3,6 +3,8 @@ part of dataProcessing;
 /// Abstract class for the represent the connections logically
 abstract class VisConnection{
 
+  List<VisConnection> connectionsForIntersectionTest = new List<VisConnection>();
+
   /// Get Configuration information for the connection
   ConnConfig get config;
 
@@ -89,6 +91,47 @@ abstract class VisConnection{
   /// Does this connection contains booth element
   bool containsBothElement(VisualObject A, VisualObject B);
 
+  List<double> getColorBasedOnValue(double value, [double maxValue = 0.0, double minValue = 0.0, bool reversed = false]);
+
+  List<double> createColorGradient(Color colorOne, double ratio){
+
+    var colorOneHSL = colorOne.HSL;
+
+    var newColor = new Color().setHSL(
+      colorOneHSL[0], colorOneHSL[1], 0.2 + 0.7 * ratio
+    );
+
+    return <double>[newColor.r, newColor.g, newColor.b];
+  }
+
   /// Update the colors of the segment and the connection based on the diagram coloring settings
   void updateColors();
+
+  void updateSegmentsRadianPos(double posDoubleConvertValue, int maxBlockNumberInGroup){
+    var segmentOneRadPos = this.segmentOne.indexInParent +
+        this.segmentOne.parent.indexInParent * maxBlockNumberInGroup;
+    var segmentTwoRadPos = this.segmentTwo.indexInParent +
+        this.segmentTwo.parent.indexInParent * maxBlockNumberInGroup;
+    if(segmentOneRadPos < segmentTwoRadPos){
+      this.sortPositionSegMin = segmentOneRadPos * posDoubleConvertValue;
+      this.sortPositionSegMax = segmentTwoRadPos * posDoubleConvertValue;
+      this.sortPositionOne = segmentOneRadPos;
+      this.sortPositionTwo = segmentTwoRadPos;
+    }else{
+      this.sortPositionSegMin = segmentTwoRadPos * posDoubleConvertValue;
+      this.sortPositionSegMax = segmentOneRadPos * posDoubleConvertValue;
+      this.sortPositionOne = segmentTwoRadPos;
+      this.sortPositionTwo = segmentOneRadPos;
+    }
+  }
+
+  double sortPositionSegMin;
+
+  double sortPositionSegMax;
+
+  int sortPositionOne;
+
+  int sortPositionTwo;
+
+  int numberOfIntersection = 0;
 }

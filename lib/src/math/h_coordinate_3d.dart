@@ -27,7 +27,7 @@ class HCoordinate3D implements HomogeneousCoordinate<Vector4>{
   }
 
   ///Plane through three point
-  HomogeneousCoordinate<Vector4> crossProduct(List<HomogeneousCoordinate<Vector4>> point) {
+  HomogeneousCoordinate<Vector4> crossProduct(List<HomogeneousCoordinate> point) {
     /*var descartes = this.getDescartesCoordinate();
     var pointDescartes = point.getDescartesCoordinate();
 
@@ -82,9 +82,9 @@ class HCoordinate3D implements HomogeneousCoordinate<Vector4>{
 
   HomogeneousCoordinate<Vector4> toUnitVector() {
     if(this.isVector){
-      this._coordinate.xyz = this._coordinate.xyz.normalize();
+      this._coordinate.xyz = this._coordinate.xyz..normalize();
     }else{
-      this._coordinate.xyz = this.getDescartesCoordinate().normalize();
+      this._coordinate.xyz = this.getDescartesCoordinate()..normalize();
       this._coordinate.w = 0.0;
     }
     return this;
@@ -103,6 +103,10 @@ class HCoordinate3D implements HomogeneousCoordinate<Vector4>{
     }
 
     return !isVectorCoord;
+  }
+
+  double dotProduct(HomogeneousCoordinate point){
+    return this.normalized().toUnitVector().coordinate.dot(point.normalized().toUnitVector().coordinate);
   }
 
   HomogeneousCoordinate<Vector4> translate(dynamic point) {

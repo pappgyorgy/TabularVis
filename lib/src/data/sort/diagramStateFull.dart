@@ -186,7 +186,7 @@ class DiagramStateFull extends State{
   }
 
 
-  void chooseNeighbour(int neighbour) {
+  void chooseNeighbour(int neighbour, {bool isPermanent = false, bool enablePreCalculate = false, int startRange = 1, int endRange = -1}) {
     //Find out which connections you need to move and where
     // N = Number of groups = order.length
     // M = groups elements = order[i].length
@@ -390,7 +390,7 @@ class DiagramStateFull extends State{
   }
 
 
-  int diffNeighbour(int neighbour) {
+  int diffNeighbour(int neighbour, {bool isPermanent = false, bool enablePreCalculate = false, int startRange = 1, int endRange = -1}) {
     State newState = this.copy();
     //newState.calculate();
 
@@ -434,7 +434,7 @@ class DiagramStateFull extends State{
 
 
   @override
-  void changeStateByOrder(List<VisualObject> newOrder) {
+  void changeStateByOrder(dynamic newOrder) {
     this.order;
 
     for(var i = 0; i < newOrder.length; i++) {
@@ -472,12 +472,12 @@ class DiagramStateFull extends State{
   }
 
   @override
-  int diffNeighbourByOrder(List<VisualObject> order) {
+  int diffNeighbourByOrder(List<dynamic> order) {
     // TODO: implement diffNeighbourByOrder
   }
 
   @override
-  State chooseRandomState() {
+  State chooseRandomState({bool setFinalOrder = true, bool enablePreCalculation = false, bool enableHelper = false}) {
     throw new UnimplementedError("unimplemented");
   }
 

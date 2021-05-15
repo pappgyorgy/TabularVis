@@ -38,7 +38,7 @@ abstract class HomogeneousCoordinate<T>{
 
   double distanceTo(HomogeneousCoordinate<T> point);
 
-  HomogeneousCoordinate<T> crossProduct(List<HomogeneousCoordinate<T>> point);
+  HomogeneousCoordinate<T> crossProduct(List<HomogeneousCoordinate> point);
 
   HomogeneousCoordinate<T> translate(dynamic point);
 
@@ -94,6 +94,8 @@ abstract class HomogeneousCoordinate<T>{
   }
 
   double get length;
+
+  double dotProduct(HomogeneousCoordinate<T> point);
 
   HomogeneousCoordinate<T> negate();
 

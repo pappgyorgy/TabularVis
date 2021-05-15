@@ -1,71 +1,66 @@
 import 'dart:async';
 import 'dart:html';
-import 'dart:mirrors';
-import 'dart:convert' show JSON;
+import 'dart:convert';
+import 'dart:collection';
 
-import 'package:polymer/polymer.dart';
-import 'package:polymer_elements/iron_flex_layout_classes.dart';
-import 'package:three/extras/font_utils.dart' as FontUtils;
+import 'package:angular/angular.dart';
+import 'package:angular/core.dart';
+import 'package:bezier_simple_connect_viewer/bezier_simple_connect_viewer.dart';
+// ignore: uri_has_not_been_generated
+import 'index.template.dart' as ng;
+// ignore: uri_has_not_been_generated
+import 'package:bezier_simple_connect_viewer/src/components/app_component.template.dart' as ngRoot;
 
+import 'package:logging/logging.dart';
 
-import 'package:angular2/angular2.dart';
-import 'package:angular2/platform/browser.dart';
+@Injectable()
+class ErrorHandler implements ExceptionHandler {
+  ApplicationRef _appRef;
+  Logger sender = new Logger("AppLogger");
 
-import 'package:tabular_vis/tabular_vis.dart';
+  ErrorHandler(Injector injector) {
+    // prevent DI circular dependency
+    new Future<Null>.delayed(Duration.ZERO, () {
+      _appRef = injector.get(ApplicationRef) as ApplicationRef;
+    });
+  }
 
-Future loadFonts() async{
+  @override
+  void call(dynamic exception, [dynamic stackTrace, String reason]) {
+    final stackTraceParam = stackTrace is StackTrace
+        ? stackTrace
+        : (stackTrace is String
+        ? new StackTrace.fromString(stackTrace)
+        : (stackTrace is List
+        ? new StackTrace.fromString(stackTrace.join('\n'))
+        : null));
+    sender.shout(reason ?? exception, exception, stackTraceParam);
 
+    // We can try to get an error shown, but don't assume the app is
+    // in a healthy state after this error handler was reached.
+    // You can for example still instruct the user to reload the
+    // page with danger to cause hare because of inconsistent
+    // application state..
+    // To get changes shown, we need to explicitly invoke change detection.
+    _appRef?.tick();
+  }
 }
 
 Future main() async{
 
+  //https://freetypography.com/2014/07/17/free-font-s-arial/
+  var string = await HttpRequest.getString("fonts/open_sans_regular.json");
+  MapBase<String, dynamic> jsonMap = json.decode(string);
+  loadFace(jsonMap);
 
+  string = await HttpRequest.getString("fonts/open_sans_extrabold_regular.json");
+  MapBase<String, dynamic> jsonMap2 = json.decode(string);
+  loadFace(jsonMap2);
 
-  var string = await HttpRequest.getString("fonts/helvetiker_regular.json");
-  FontUtils.loadFace(JSON.decode(string) as Map<String, String>);
+  string = await HttpRequest.getString("fonts/open_sans_bold.json");
+  MapBase<String, dynamic> jsonMap3 = json.decode(string);
+  loadFace(jsonMap3);
 
-  loadFonts();
-  await initPolymer();
-  bootstrap(AppComponent);
-
-  //Initialize drawing area
-  /*AppComponent app = new AppComponent();
-
-  /*var testMatrix = [
-    [[0], ['A'], ['B'], ['C']],
-
-    [['D'], [1], [2], [5]],
-    [['E'], [3], [4], [3]],
-    [['F'], [3], [4], [1]],
-  ];*/
-
-  var testMatrix = [
-    [[0], ['A'], ['B']],
-    [['C'], [1], [2]],
-    [['D'], [3], [4]],
-  ];
-
-  /*var testMatrix = [
-    [[0], ['A'], ['B'], ['B'], ['C'], ['D'], ['E'], ['F'], ['G']],
-    [['H'], [1], [2], [1], [2], [1], [2], [1], [2]],
-    [['I'], [1], [2], [1], [2], [1], [2], [1], [2]],
-    [['J'], [1], [2], [1], [2], [1], [2], [1], [2]],
-    [['K'], [1], [2], [1], [2], [1], [2], [1], [2]],
-    [['L'], [1], [2], [1], [2], [1], [2], [1], [2]],
-    [['M'], [1], [2], [1], [2], [1], [2], [1], [2]],
-    [['N'], [1], [2], [1], [2], [1], [2], [1], [2]],
-    [['O'], [1], [2], [1], [2], [1], [2], [1], [2]]
-  ];*/
-
-  /*for(var i = 1; i < 3; i++){
-    for(var j = 1; j < 3; j++){
-      testMatrix[i][j][0] = new Random().nextInt(12);
-    }
-  }*/
-
-  //var diagramID = app.setInputData(testMatrix);
-
-  //app.createDiagram(diagramID);
-
-  app.drawSomething();*/
+  //bootstrapStatic(AppComponent, [provide(ExceptionHandler, useClass: ErrorHandler)], ng.initReflector);
+  runApp(ngRoot.AppComponentNgFactory);
 }

@@ -6,6 +6,7 @@ class MinConflicts implements SortAlgorithm{
   MinConflicts(){}
   MinConflicts.setMaxStep(this.maxStep);
 
+  @Deprecated("no usage")
   int searchMinOne(State x, int notMoveIndex) {
     int bestIndex = -1;
     int min = 0;
@@ -30,6 +31,7 @@ class MinConflicts implements SortAlgorithm{
     return bestIndex;
   }
 
+  @Deprecated("no usage")
   int searchMinTwo(State x, int notMoveIndex) {
     int bestIndex = -1;
     int min = 0;
@@ -54,6 +56,7 @@ class MinConflicts implements SortAlgorithm{
     return bestIndex;
   }
 
+  @Deprecated("no usage")
   int searchMinThree(State x, int notMoveIndex) {
     int bestIndex = -1;
     int min = 0;
@@ -77,6 +80,7 @@ class MinConflicts implements SortAlgorithm{
     return bestIndex;
   }
 
+  @Deprecated("no usage")
   List<int> searchMinThreeUpdated(State x, int notMoveIndex) {
     int bestIndex = -1;
     int min = 0;
@@ -100,6 +104,7 @@ class MinConflicts implements SortAlgorithm{
     return [bestIndex, min];
   }
 
+  @Deprecated("no usage")
   State executeMinConflictSearchOne(State x) {
     State minState = x.copy();
     for(int i = 0; i < this.maxStep; i++){
@@ -127,6 +132,7 @@ class MinConflicts implements SortAlgorithm{
     return minState;
   }
 
+  @Deprecated("no usage")
   State executeMinConflictSearchTwo(State x) {
     State minState = x.copy();
     for(int i = 0; i < this.maxStep; i++){
@@ -154,6 +160,7 @@ class MinConflicts implements SortAlgorithm{
     return minState;
   }
 
+  @Deprecated("no usage")
   State executeMinConflictSearchThree(State x) {
     int bestIndex = -1;
     for(int i = 0; i < this.maxStep; i++) {
@@ -171,6 +178,7 @@ class MinConflicts implements SortAlgorithm{
     return x;
   }
 
+  @Deprecated("no usage")
   State executeMinConflictSearchThreeUpdated(State x) {
     int bestIndex = -1;
     for(int i = 0; i < this.maxStep; i++) {
@@ -188,6 +196,7 @@ class MinConflicts implements SortAlgorithm{
     return x;
   }
 
+  @Deprecated("no usage")
   State executeMinConflictSearchFour(State x) {
     int bestIndex = -1;
     int index = 0;
@@ -211,7 +220,7 @@ class MinConflicts implements SortAlgorithm{
 
       }
       if(endBestIndex > -1) {
-        (x as DiagramStateFullWithoutCopy).chooseNeighbour(endBestIndex, true);
+        (x as DiagramStateFullWithoutCopy).chooseNeighbour(endBestIndex, isPermanent: true);
         //print("## ${x.order}: ${x.getValue()} ##");
       }
       bestIndex = endBestIndex;
@@ -221,21 +230,61 @@ class MinConflicts implements SortAlgorithm{
     return x;
   }
 
+  State executeMinConflictSearchFive(State x) {
+    int bestIndex = -1;
+    int index = 0;
+    var numberOfGroupsMinusOne = x.diagramElements.rootElement.numberOfChildren -1;
+    var numberOfPossNeighbours = x.numberOfNeighbours();
+    do {
+
+      var minValue = x.getValue();
+      var minValueNeighbour = -1;
+      x.maxConflictConnection().forEach((int maxIntersectionNeighbour){
+
+        if(maxIntersectionNeighbour + numberOfGroupsMinusOne > numberOfPossNeighbours){
+          throw new StateError("Miscalculated neighbour for max conflict connection");
+        }
+
+        (x as StateVisObjConnectionMod).preCalculateNeighboursValue(maxIntersectionNeighbour, maxIntersectionNeighbour + numberOfGroupsMinusOne);
+        if(x.bestNeighbourIndex > -1){
+          if((x as StateVisObjConnectionMod).neighboursValues[x.bestNeighbourIndex] < minValue){
+            minValue = (x as StateVisObjConnectionMod).neighboursValues[x.bestNeighbourIndex];
+            minValueNeighbour = x.bestNeighbourIndex;
+          }
+        }
+
+      });
+
+      if(minValueNeighbour > -1) {
+        x.chooseNeighbour(minValueNeighbour, isPermanent: true, enablePreCalculate: false);
+        //print("## ${x.order}: ${x.getValue()} ##");
+      }
+      bestIndex = minValueNeighbour;
+      index++;
+    }while(bestIndex > -1 && index < 20);
+    x.updateFromFinalOrder();
+    return x;
+  }
+
+  @Deprecated("no usage")
   State solveOne(State x){
     State alma = this.executeMinConflictSearchOne(x);
     return alma;
   }
 
+  @Deprecated("no usage")
   State solveTwo(State x){
     State alma = this.executeMinConflictSearchTwo(x);
     return alma;
   }
 
+  @Deprecated("no usage")
   State solveFour(State x){
     State alma = this.executeMinConflictSearchFour(x);
     return alma;
   }
 
+  @Deprecated("no usage")
   State solveMaxMinSearch(State x){
     State alma = this.executeMinConflictSearchThree(x);
     return alma;
@@ -243,6 +292,6 @@ class MinConflicts implements SortAlgorithm{
 
   @override
   State solve(State x) {
-    return solveFour(x);
+    return executeMinConflictSearchFive(x);
   }
 }

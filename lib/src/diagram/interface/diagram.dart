@@ -7,6 +7,9 @@ enum DiagramType{
 }
 
 abstract class Diagram{
+  int numberOfAdditionalLayer = 0;
+
+  bool drawGroupLabel = false;
 
   SimpleCircle<HomogeneousCoordinate> get drawCircle;
   SimpleCircle<HomogeneousCoordinate> get baseCircle;
@@ -22,12 +25,14 @@ abstract class Diagram{
 
   int get lineSegment;
 
+  ShapeType connectionType = ShapeType.poincare;
+
   double angleShift = 0.0;
 
-  factory Diagram(DiagramType type, VisualObject diagramData, [MatrixValueRepresentation wayToCreateSegments = null]){
+  factory Diagram(DiagramType type, [VisualObject diagramData = null, MatrixValueRepresentation wayToCreateSegments = null]){
     switch(type){
       case DiagramType.basic:
-        return new Diagram2D(diagramData, wayToCreateSegments);
+        return diagramData == null ? new Diagram2D.empty() : new Diagram2D(diagramData, wayToCreateSegments);
         break;
       default:
         throw new StateError("Only basic diagram type is available");
@@ -42,6 +47,8 @@ abstract class Diagram{
   /// 1 - vertical
   int textDirection = 0;
 
+  Map<String, VisualObject> dataObjects;
+
   bool isAscendingOrder = true;
 
   double lineWidth = 0.035;
@@ -55,11 +62,19 @@ abstract class Diagram{
 
   double averageValue = 1.0;
 
+  double averageBarLength = 1.0;
+
+  int numberOfConcentricCircleForEdgeBundling = 3;
+
   num maxValue = 0.0;
+
+  num minValue = 0.0;
 
   double get maxSegmentRadius;
 
   bool drawLabelNum = false;
+
+  List<RangeMath<double>> valueRanges;
 
   void updateCirclesRadius();
 
@@ -75,9 +90,17 @@ abstract class Diagram{
 
   bool toggleVisibility();
 
-  bool modifyDiagram(VisualObject dataObject);
+  bool modifyDiagram();
 
   List<ShapeForm> getDiagramsShapesPoints(VisualObject rootElement);
 
-  VisConnection getConnectionFromPosition(VisualObject rootElement, HomogeneousCoordinate position);
+  VisConnection getConnectionFromPosition(HomogeneousCoordinate position);
+
+  VisualObject get actualDataObject;
+
+  VisConnection get defaultConnection;
+
+  void changeElementsIndex(String idOne, String idTwo, int indexOne, int indexTwo);
+
+  double get directionsHeight;
 }

@@ -8,12 +8,12 @@ enum ShapeMove{
 
 @Injectable()
 class Visualization {
-  Map<String, Object3D> _diagrams;
+  Map<String, Node> _diagrams;
   Rendering _render;
 
   Rendering get render => this._render;
-  Map<String, Object3D> get diagrams => this._diagrams;
-  GeometryBuilder geometryBuilder = new GeometryBuilder();
+  Map<String, Node> get diagrams => this._diagrams;
+  ShapeBuilder geometryBuilder = new ShapeBuilder();
 
   int latestRenderDepth = 0;
   bool _freeMovementEnabled = false;
@@ -25,17 +25,20 @@ class Visualization {
 
   List<String> _drawnDiagrams;
 
-  Visualization.customFrame(double devicePixelRatio, double width, double height){
-    this._render = new Rendering(devicePixelRatio, width, height);
-    this._render.animate(60);
+  Visualization.customFrame(int width, int height){
+    this._render = new Rendering(width, height);
+    HTML.window.animationFrame.then((value){
+      this._render.animate(value);
+      print("animationFrame $value");
+    });
 
-    this._diagrams = new Map<String, Object3D>();
+    this._diagrams = new Map<String, Node>();
     this._colorRange = new ColorRange();
     this._drawnDiagrams = new List();
     diagramPosition = new Matrix4.identity();
   }
 
-  Visualization() : this.customFrame(1.0, 640.0, 480.0);
+  Visualization() : this.customFrame(640, 480);
 
   bool toogleFreeMovement(){
     _freeMovementEnabled = !_freeMovementEnabled;
@@ -50,7 +53,7 @@ class Visualization {
     return this._render.image;
   }
 
-  void changeRendererSize(double width, double height){
+  void changeRendererSize(int width, int height){
     this._render._changeRenderSize(width, height);
   }
 
@@ -63,7 +66,7 @@ class Visualization {
   void modifyDiagram(String diagramID, List<DiagramVisObject> listOfVisObj) {
 
     this._render._removeFromScene(diagramID);
-    this._diagrams[diagramID] = new Object3D();
+    this._diagrams[diagramID] = new Node.Container(diagramID);
 
     listOfVisObj.forEach((DiagramVisObject visObj){
 
@@ -111,10 +114,11 @@ class Visualization {
     this._render.addToScene(this._diagrams[diagramID], diagramID);
   }
 
+  @Deprecated("Because of ChronosGL")
   Future<bool> drawDiagram(
       String diagramID,
       List<ShapeForm> listOfVisObj) async{
-    try{
+    /*try{
       var material = new MeshBasicMaterial(color: 0xffffff,
           shading: FlatShading,
           vertexColors: VertexColors,
@@ -140,7 +144,7 @@ class Visualization {
       return true;
     }catch(error){
       return false;
-    }
+    }*/
   }
 
   void drawDiagram2(
@@ -149,13 +153,18 @@ class Visualization {
 
     this._drawnDiagrams.add(diagramID);
 
-    GeometryBuilder gb = new GeometryBuilder();
+    ShapeBuilder gb = new ShapeBuilder();
 
     List<ShapeLine> shapeLine = new List<ShapeLine>();
     List<ShapeBezier> shapeBezier = new List<ShapeBezier>();
     List<ShapeSimple> shapeSimple = new List<ShapeSimple>();
     List<ShapeText> shapeText = new List<ShapeText>();
-
+    List<ShapePoincare> shapePoincare = new List<ShapePoincare>();
+    List<ShapeHeatmap> shapeHeatmap = new List<ShapeHeatmap>();
+    List<ShapeEdgeBundle> shapeEdgeBundle = new List<ShapeEdgeBundle>();
+    List<ShapeBlockConnection> shapeBlockConnection = new List<ShapeBlockConnection>();
+    List<ShapeUniqueScaleIndicator> shapeUniqueScaleIndicator = new List<ShapeUniqueScaleIndicator>();
+    List<ShapeBarLabel> shapeBarLabel = new List<ShapeBarLabel>();
 
 
     for(var h = 0; h < listOfVisObj.length; h++) {
@@ -165,24 +174,62 @@ class Visualization {
         shapeBezier.add(listOfVisObj[h] as ShapeBezier);
       }else if(listOfVisObj[h] is ShapeText){
         shapeText.add(listOfVisObj[h] as ShapeText);
-      }else{
+      }else if(listOfVisObj[h] is ShapeBlockConnection){
+        shapeBlockConnection.add(listOfVisObj[h] as ShapeBlockConnection);
+      }else if(listOfVisObj[h] is ShapeUniqueScaleIndicator){
+        shapeUniqueScaleIndicator.add(listOfVisObj[h] as ShapeUniqueScaleIndicator);
+      }else if(listOfVisObj[h] is ShapeBarLabel){
+        shapeBarLabel.add(listOfVisObj[h] as ShapeBarLabel);
+      }else if(listOfVisObj[h] is ShapeSimple){
         shapeSimple.add(listOfVisObj[h] as ShapeSimple);
+      } else if(listOfVisObj[h] is ShapeHeatmap){
+        shapeHeatmap.add(listOfVisObj[h] as ShapeHeatmap);
+      } else if(listOfVisObj[h] is ShapeEdgeBundle){
+        shapeEdgeBundle.add(listOfVisObj[h] as ShapeEdgeBundle);
+      } else {
+        shapePoincare.add(listOfVisObj[h] as ShapePoincare);
       }
     }
-
-    shapeText.forEach((ShapeForm shape){
-      gb.addShape(shape, 0);
-    });
 
     shapeBezier.sort(((ShapeBezier a, ShapeBezier b){
       return (a.shapeHeight - b.shapeHeight).toInt();
     }));
 
+    shapePoincare.sort(((ShapePoincare a, ShapePoincare b){
+      return (a.shapeHeight - b.shapeHeight).toInt();
+    }));
+
+    shapeUniqueScaleIndicator.forEach((ShapeForm shape){
+      gb.addShape(shape, 0);
+    });
+
     shapeLine.forEach((ShapeForm shape){
       gb.addShape(shape, 0);
     });
 
+    shapeBarLabel.forEach((ShapeForm shape){
+      gb.addShape(shape, 0);
+    });
+
     shapeSimple.forEach((ShapeForm shape){
+      gb.addShape(shape, 0);
+    });
+
+    shapeBlockConnection.forEach((ShapeForm shape){
+      gb.addShape(shape, 0);
+    });
+
+    shapeText.forEach((ShapeForm shape){
+      gb.addShape(shape, 0);
+    });
+
+
+
+    shapeHeatmap.forEach((ShapeForm shape){
+      gb.addShape(shape, 0);
+    });
+
+    shapeEdgeBundle.forEach((ShapeEdgeBundle shape){
       gb.addShape(shape, 0);
     });
 
@@ -191,6 +238,19 @@ class Visualization {
     int matIndex = 1;
 
     shapeBezier.forEach((ShapeForm shape){
+      /*if(index >= numberToChange){
+        index = 0;
+        if(matIndex + 1 > 6){
+          matIndex = 1;
+        }else{
+          matIndex++;
+        }
+      }*/
+      gb.addShape(shape, matIndex);
+      index++;
+    });
+
+    shapePoincare.forEach((ShapeForm shape){
       /*if(index >= numberToChange){
         index = 0;
         if(matIndex + 1 > 6){
@@ -273,18 +333,32 @@ class Visualization {
 
     }*/
 
-    var mesh = gb.mergedGeometry;
+    var geometryBuilder = gb.mergedGeometry;
 
-    this._diagrams[diagramID].add(mesh);
+    Node node = new Node(
+        "${diagramID}_mergedGeom",
+        GeometryBuilderToMeshData("${diagramID}_mergedGeom", this._render._progBasic, geometryBuilder)
+        , this._render.material);
+
+    this._diagrams[diagramID].add(node);
 
 
     /*var pointGeom = new Geometry();
     pointGeom.vertices = mesh.geometry.vertices;
     this._diagrams[diagramID].add(new ParticleSystem(pointGeom, new ParticleBasicMaterial(color: 0xff0000, size: 2.0)));*/
 
-    this._diagrams[diagramID].applyMatrix(diagramPosition);
+    setNewPositionForDiagram(diagramID, this.diagramPosition);
 
     this._render.addToScene(this._diagrams[diagramID], diagramID);
+  }
+
+  void setNewPositionForDiagram(String ID, Matrix4 transform){
+    if(this._diagrams[ID] == null){
+      throw new StateError("There is no 3DObj with the given ID: $ID");
+    }
+    Vector3 newDiagramPosition = this._diagrams[ID].getPos();
+    newDiagramPosition.applyMatrix4(transform);
+    this._diagrams[ID].setPosFromVec(newDiagramPosition);
   }
 
   void clearCanvas(){
@@ -345,11 +419,11 @@ class Visualization {
         var a = worldCoord.first.toUnitVector();
         var b = worldCoord.last.toUnitVector();
         //print("${a.x.toStringAsFixed(3)},${a.y.toStringAsFixed(3)} || ${b.x.toStringAsFixed(3)},${b.y.toStringAsFixed(3)} == $difference");
-        var axis = this._render._camera.position.normalized();
+        var axis = this._render._flyingCamera.getPos().normalized();
         //print("$axis");
-        transformation.translate(this._diagrams[ID].position);
+        transformation.translate(this._diagrams[ID].getPos());
         transformation.rotate(axis, difference);
-        transformation.translate(-this._diagrams[ID].position);
+        transformation.translate(-this._diagrams[ID].getPos());
 
         /*this._diagrams[ID].children.forEach((Object3D child){
           if(child.name == "label"){
@@ -373,8 +447,8 @@ class Visualization {
       default:
         break;
     }
-    this._diagrams[ID].applyMatrix(transformation);
-    diagramPosition = this._diagrams[ID].matrix;
+    setNewPositionForDiagram(ID, transformation);
+    diagramPosition.multiply(transformation);
     return true;
   }
 

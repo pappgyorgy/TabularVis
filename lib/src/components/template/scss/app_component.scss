@@ -1,0 +1,15 @@
+@import 'package:angular_components/app_layout/mixins';
+
+:host {
+  display: block;
+  height: 100%;
+  overflow: hidden;
+  position: absolute;
+  width: 100%;
+  top: 0;
+  left: 0;
+}
+
+#draw-area{
+  background-color: #FBFAF4;
+}

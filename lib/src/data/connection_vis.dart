@@ -6,7 +6,7 @@ enum DiagramColoring{
 }
 
 /// Abstract class for the represent the connections logically
-class ConnectionVis implements VisConnection{
+class ConnectionVis extends VisConnection{
 
   /// List of the main segments' color
   static Map<String, Color> mainSegmentsColor = new Map<String, Color>();
@@ -33,6 +33,10 @@ class ConnectionVis implements VisConnection{
     mainSegmentsColorRange = new ColorRange.fromColors(
         new Color.fromArray([1.0,0.0,0.0]),
         new Color.fromArray([1.0,0.0,0.0])
+    );
+    mainSegmentsColorRangeRandom = new ColorRange.fromColors(
+        new Color.fromArray([0.0,0.0,0.0]),
+        new Color.fromArray([1.0,1.0,1.0])
     );
   }
 
@@ -115,6 +119,8 @@ class ConnectionVis implements VisConnection{
   /// The min value for blue
   static double minValueForBlue = 0.0;
 
+
+
   int _direction = 0;
 
   /// Get the connection direction
@@ -176,11 +182,6 @@ class ConnectionVis implements VisConnection{
   /// Modify the colors
   void modifyMainSegmentsColorFromList(bool isRandom){
     if(isRandom){
-      for(var i = 0; i < mainSegmentsColorRandom.length; i++){
-        mainSegmentsColorRandom[mainSegmentsColorRandom.keys.elementAt(i)] =
-            mainSegmentsColorRangeRandom.getRandomValueFromRange();
-      }
-
       this._config.segmentOneColor = mainSegmentsColorRandom[this._segmentOne.parent.id];
       this._config.segmentTwoColor = mainSegmentsColorRandom[this._segmentTwo.parent.id];
       this._config.connectionColor = mainSegmentsColorRandom[this._segmentOne.parent.id];
@@ -272,16 +273,27 @@ class ConnectionVis implements VisConnection{
   /// we need to map length to 0.0 - 0.5
   /// this will be our color value
   /// then we add this value to the blue color and we will get the actual color
-  List<double> getColorBasedOnValue(double value){
+  List<double> getColorBasedOnValue(double value, [double maxValue = null, double minValue = null, bool reversed = false]){
+    if(maxValue == null || minValue == null){
+      maxValue = maxValueForRed;
+      minValue = minValueForBlue;
+    }
     List<double> baseValue = <double>[0.5,1.0,0.5];
-    var minMaxValueRange = maxValueForRed - minValueForBlue;
+    var minMaxValueRange = maxValue - minValue;
 
-    var percent = value / minMaxValueRange;
+    var percent = (value - minValue) / minMaxValueRange;
 
     Color newColor = new Color();
-    newColor.r = maxColor.r * percent + minColor.r * (1-percent);
-    newColor.g = maxColor.g * percent + minColor.g * (1-percent);
-    newColor.b = maxColor.b * percent + minColor.b * (1-percent);
+    if(reversed){
+      newColor.r = maxColor.r * (1-percent) + minColor.r * percent;
+      newColor.g = maxColor.g * (1-percent) + minColor.g * percent;
+      newColor.b = maxColor.b * (1-percent) + minColor.b * percent;
+    }else{
+      newColor.r = maxColor.r * percent + minColor.r * (1-percent);
+      newColor.g = maxColor.g * percent + minColor.g * (1-percent);
+      newColor.b = maxColor.b * percent + minColor.b * (1-percent);
+    }
+
 
     return [newColor.r, newColor.g, newColor.b];
 
@@ -411,4 +423,5 @@ class ConnectionVis implements VisConnection{
       return segmentOne;
     }
   }
+
 }

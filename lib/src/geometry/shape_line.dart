@@ -1,6 +1,6 @@
 part of visualizationGeometry;
 
-class ShapeLine implements ShapeForm {
+class ShapeLine extends ShapeForm {
 
   List<LineGeom<double, HomogeneousCoordinate>> _lines =
   new List<LineGeom<double, HomogeneousCoordinate>>();
@@ -37,19 +37,19 @@ class ShapeLine implements ShapeForm {
   int _direction = 0;
   String _label = "";
 
-  List<RangeMath<double>> textRanges;
-  List<Geometry> fontGeometries;
+  RangeMath<double> textRange;
+  List<TextGeometryBuilder> fontGeometries;
   List<Matrix4> _labelMatrices;
 
   int value = 0;
 
   Map<String, ShapeForm> _children = new Map<String, ShapeForm>();
 
-  ShapeLine(this._lines, this._diagram, [this._parent = null]);
+  ShapeLine(this._lines, this._diagram, [this._parent = null]) : super._();
 
   ShapeLine.fromData(this._diagram, RangeMath<double> range,
-      RangeMath<double> radius, [this.textRanges = null, this.value = 0, this._parent = null, String key = "",
-        this._is3D = false, this._shapeHeight = 10.0, this._direction = 0]){
+      RangeMath<double> radius, [this.textRange = null, this.value = 0, this._parent = null, String key = "",
+        this._is3D = false, this._shapeHeight = 10.0, this._direction = 0]) : super._(){
 
     borderBaseColor = new Color(0x000000);
     double radius2 = (radius.length as double) + this._diagram.lineWidth*2;
@@ -77,29 +77,63 @@ class ShapeLine implements ShapeForm {
 
     if(this._diagram.drawLabelNum) {
       cloneCircle = this._lines.last.lineArc.circle.clone();
-      cloneCircle.radius = cloneCircle.radius + 0.5;
+      //cloneCircle.radius = cloneCircle.radius -= 0.15;
+      //cloneCircle.radius = cloneCircle.radius -= 2.15;
+      cloneCircle.radius -= 1.5;
 
-      if (this.textRanges != null) {
+      if (this.textRange != null) {
+
+        /*if(this.value > 100){
+          this.textRange.end -= this.textRange.length;
+        } else if(this.value > 1000){
+          this.textRange.end -= this.textRange.length * 2;
+        }*/
+
         this._labelMatrices = new List<Matrix4>();
 
         this._label = "${this.value}";
-        this.fontGeometries = new List<Geometry>();
+        this.fontGeometries = new List<TextGeometryBuilder>();
 
-        for (RangeMath<double> range in this.textRanges) {
-          var fontshapes = FontUtils.generateShapes(this._label, 2);
+        int textSize = 2;
+
+        var prevBegin = this.textRange.begin;
+
+        if(this.textRange.length >= 0.009){
+          this.textRange.begin += 0.008;
+          textSize += 1;
+          cloneCircle.radius -= 0.325;
+        }
+        if(this.textRange.length >= 0.012){
+          this.textRange.begin += 0.008;
+          textSize += 1;
+          cloneCircle.radius -= 0.325;
+        }else{
+          this.textRange.begin += 0.01;
+        }
+
+        var fontshapes = generateShapes(this._label, textSize, 4, "open sans", "bold");
+        this.fontGeometries.add(
+            new TextGeometryBuilder(fontshapes, 5));
+
+        this.setLabels(this.textRange, this.fontGeometries.last);
+
+        this.textRange.begin = prevBegin;
+
+        /*for (RangeMath<double> range in this.textRanges) {
+          var fontshapes = generateShapes(this._label, 2);
           this.fontGeometries.add(
-              new ShapeGeometry(fontshapes, curveSegments: 5));
+              new TextGeometryBuilder(fontshapes, 5));
 
           this.setLabels(range, this.fontGeometries.last);
-        }
+        }*/
       }
     }
   }
 
-  void modifyGeometry(List<RangeMath<double>> ranges,
-      List<SimpleCircle<HomogeneousCoordinate>> circles,
+  void modifyGeometry(RangeMath<double> rangeA, RangeMath<double> rangeB,
       [ShapeForm parent = null, String key = "",
-        bool is3d = false, double height = 10.0]) {
+        bool is3d = false, double height = 10.0,
+        RangeMath<double> textRange, int value, RangeMath<double> blockRange, RangeMath<double> blockRange2]) {
 
     if(parent != null){
       this.parent.children.remove(key);
@@ -107,28 +141,72 @@ class ShapeLine implements ShapeForm {
       this._parent.setChild(this, key);
     }
 
+    this.textRange = textRange;
+    this.value = value;
+
     this._is3D = is3d;
     this._shapeHeight = height;
 
-    var segmentOuterCircleRadius = this._diagram.outerSegmentCircle.radius;
+    double radius2 = (rangeB.length as double) + this._diagram.lineWidth*2;
 
-    if(this._diagram.wayToCreateSegments
-        == MatrixValueRepresentation.segmentsHeight){
-      var radius = ranges.last;
+    this._lines.first.lineArc.range = rangeA;
+    this._lines.first.lineArc.circle.radius = rangeB.length as double;
+    this._lines.last.lineArc.range = rangeA;
+    this._lines.last.lineArc.circle.radius = radius2;
 
-      if(radius != null && radius.length != null){
-        var radiusUnitValue = this._diagram.maxSegmentRadius /
-            this._diagram.maxValue;
+    if(this._diagram.drawLabelNum) {
+      cloneCircle = this._lines.last.lineArc.circle.clone();
+      //cloneCircle.radius = cloneCircle.radius -= 2.15;
+      //cloneCircle.radius = cloneCircle.radius -= 0.15;
+      cloneCircle.radius -= 1.5;
 
-        var segmentNewRadiusToAdd = (radius.length as double) * radiusUnitValue;
+      if (this.textRange != null) {
 
-        segmentOuterCircleRadius = this._diagram.segmentCircle.radius + segmentNewRadiusToAdd;
+        /*if(this.value > 100){
+          this.textRange.end -= this.textRange.length / 2;
+        } else if(this.value > 1000){
+          this.textRange.end -= this.textRange.length;
+        }*/
+
+        this._labelMatrices = new List<Matrix4>();
+
+        this._label = "${this.value}";
+        this.fontGeometries = new List<TextGeometryBuilder>();
+
+        int textSize = 2;
+
+        var prevBegin = this.textRange.begin;
+
+        if(this.textRange.length >= 0.009){
+          this.textRange.begin += 0.008;
+          textSize += 1;
+          cloneCircle.radius -= 0.325;
+
+        }else if(this.textRange.length >= 0.012){
+          this.textRange.begin += 0.008;
+          textSize += 1;
+          cloneCircle.radius -= 0.325;
+        }else{
+          this.textRange.begin += 0.01;
+        }
+
+        var fontshapes = generateShapes(this._label, textSize, 4, "open sans", "bold");
+        this.fontGeometries.add(
+            new TextGeometryBuilder(fontshapes, 5));
+
+        this.setLabels(this.textRange, this.fontGeometries.last);
+
+        this.textRange.begin = prevBegin;
+
+        /*for (RangeMath<double> range in this.textRanges) {
+          var fontshapes = generateShapes(this._label, 2);
+          this.fontGeometries.add(
+              new TextGeometryBuilder(fontshapes, 5));
+
+          this.setLabels(range, this.fontGeometries.last);
+        }*/
       }
     }
-
-    this._lines.first.lineArc.range = ranges.first;
-    this._lines.last.lineArc.range = ranges.first;
-    this._lines.last.circle.radius = segmentOuterCircleRadius;
   }
 
   void setChild(ShapeForm child, String ID) {
@@ -159,12 +237,12 @@ class ShapeLine implements ShapeForm {
 
   Vector3 getInnerPointFromContour(Vector3 a, Vector3 b, Vector3 c){
 
-    var right = (a - b).normalize();
-    var left = (c - b).normalize();
-    var rotateVec = new Vector3(left.y, -left.x, 0.0).normalize();
-    var midVec = (left + right).normalize();
+    var right = (a - b)..normalize();
+    var left = (c - b)..normalize();
+    Vector3 rotateVec = new Vector3(left.y, -left.x, 0.0)..normalize();
+    Vector3 midVec = (left + right)..normalize();
 
-    midVec = midVec * midVec.dot(rotateVec).sign;
+    midVec = midVec * (midVec.dot(rotateVec)).sign;
 
     var g = acos(midVec.dot(right));
     var h = this._diagram.lineWidth / sin(g);
@@ -209,7 +287,7 @@ class ShapeLine implements ShapeForm {
     }) as List<F>;*/
   }
 
-  void setLabels(RangeMath<double> range, Geometry fontGeom){
+  void setLabels(RangeMath<double> range, TextGeometryBuilder fontGeom){
 
     this._labelMatrices.add(new Matrix4.identity());
 
@@ -224,11 +302,11 @@ class ShapeLine implements ShapeForm {
     var pos = cloneCircle.getPointFromPolarCoordinate(label_polar_pos);
     var vec2 = pos.getDescartesCoordinate() as Vector2;
 
-    var helper = (pos.getDescartesCoordinate() as Vector2).normalize();
+    var helper = (pos.getDescartesCoordinate() as Vector2)..normalize();
     var textVector = new Vector2(1.0, 0.0);
     var rotValue = 0.0;
 
-    if (label_polar_pos >= PI / 2 && label_polar_pos < (PI)) {
+    /*if (label_polar_pos >= PI / 2 && label_polar_pos < (PI)) {
       textVector = new Vector2(-1.0, 0.0);
       rotValue = ((PI / 2) - acos(helper.dot(textVector)));
       //center = new Vector3(center.x, -center.y, 0.0);
@@ -236,19 +314,31 @@ class ShapeLine implements ShapeForm {
       textVector = new Vector2(-1.0, 0.0);
       rotValue = ((PI / 2) + acos(helper.dot(textVector)));
       rotValue += PI;
-      vec2 += helper.clone().scale(fontGeom.boundingBox.max.y as double);
+      vec2 += helper.clone()..scale(fontGeom.boundingBox.max.y as double);
       //center = new Vector3(-center.x, center.y, 0.0);
     } else
     if (label_polar_pos >= (3 * (PI / 2)) && label_polar_pos < (2 * PI)) {
       textVector = new Vector2(1.0, 0.0);
       rotValue = (((PI / 2) - acos(helper.dot(textVector))) + PI);
       rotValue += PI;
-      vec2 += helper.clone().scale(fontGeom.boundingBox.max.y as double);
+      vec2 += helper.clone()..scale(fontGeom.boundingBox.max.y as double);
       //center = new Vector3(-center.x, center.y, 0.0);
     } else {
       textVector = new Vector2(1.0, 0.0);
       rotValue = ((2 * PI) - ((PI / 2) - acos(helper.dot(textVector))));
       //center = new Vector3(-center.x, -center.y, 0.0);
+    }*/
+
+    var valueToDecide = (label_polar_pos % MathFunc.PITwice) / pi;
+    if (valueToDecide <= 1.0) {
+      textVector = new Vector2(1.0, 0.0);
+      rotValue = ((2 * pi) - ((pi / 2) - acos(helper.dot(textVector))));
+    }else if(valueToDecide <= 1.5){
+      textVector = new Vector2(-1.0, 0.0);
+      rotValue = (pi/2) + acos(helper.dot(textVector));
+    }else{
+      textVector = new Vector2(1.0, 0.0);
+      rotValue = (pi + (pi/2) - acos(helper.dot(textVector)));
     }
 
     mat.translate(new Vector3(vec2.x, vec2.y, 0.0));
@@ -271,14 +361,14 @@ class ShapeLine implements ShapeForm {
 
     var retVal = new List<Vector3>();
 
-    _addLinesToList(retVal, getListOfPoints(this._lines[1].circle, this._lines[1].lineArc.range, 360));
+    _addLinesToList(retVal, getListOfPoints(this._lines[1].circle, this._lines[1].lineArc.range, 0));
     this._borderOffset = retVal.length;
-    _addLinesToList(retVal, getListOfPoints(this._lines[0].circle, this._lines[0].lineArc.range, 360));
+    _addLinesToList(retVal, getListOfPoints(this._lines[0].circle, this._lines[0].lineArc.range, 0));
     this._numberOfBorderVertices = retVal.length;
 
     if(this._diagram.drawLabelNum) {
-      if (this.textRanges != null) {
-        for (Geometry fontGeom in this.fontGeometries) {
+      if (this.textRange != null) {
+        for (TextGeometryBuilder fontGeom in this.fontGeometries) {
           retVal.addAll(fontGeom.vertices);
         }
       }
@@ -321,13 +411,13 @@ class ShapeLine implements ShapeForm {
     ));*/
 
     for(var i = 0; i < this._borderOffset - 1; i += 2){
-      listOfFaces.add(new Face3(
+      listOfFaces.add(new Face3Ext.withNormalsColors(
           i + this._borderOffset, // Face first vertex
           i, // Face second vertex
           i + this._borderOffset + 1, // Face third vertex
           vertexNormals, vertexColors
       ));
-      listOfFaces.add(new Face3(
+      listOfFaces.add(new Face3Ext.withNormalsColors(
           i + this._borderOffset + 1,
           i,
           i + 1,
@@ -336,9 +426,9 @@ class ShapeLine implements ShapeForm {
     }
 
     if(this._diagram.drawLabelNum) {
-      if (this.textRanges != null) {
+      if (this.textRange != null) {
         int offset = this._numberOfBorderVertices;
-        for (Geometry fontGeom in this.fontGeometries) {
+        for (TextGeometryBuilder fontGeom in this.fontGeometries) {
           for (var i = 0; i < fontGeom.faces.length; i++) {
             fontGeom.faces[i].vertexColors = vertexColors;
             (fontGeom.faces[i] as Face3).a += offset;

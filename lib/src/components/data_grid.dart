@@ -3,33 +3,25 @@ import 'dart:js';
 import 'dart:math';
 import 'dart:async';
 import 'dart:convert';
-import 'package:angular2/core.dart';
+import 'package:angular/core.dart';
+import 'package:angular/angular.dart';
 import 'package:angular_components/angular_components.dart';
 import 'package:spreadsheet_decoder/spreadsheet_decoder.dart';
 
-import 'package:polymer_elements/iron_icons.dart';
-import 'package:polymer_elements/editor_icons.dart';
-import 'package:polymer_elements/paper_input.dart';
-import 'package:polymer_elements/paper_toolbar.dart';
-import 'package:polymer_elements/paper_icon_button.dart';
-import 'package:polymer_elements/paper_button.dart';
-import 'package:polymer_elements/paper_item.dart';
-import 'package:polymer_elements/paper_item_body.dart';
-import 'package:polymer_elements/paper_card.dart';
-import 'package:polymer_elements/iron_flex_layout.dart';
-import 'package:polymer_elements/paper_fab.dart';
-import 'package:polymer_elements/paper_material.dart';
-import 'package:polymer_elements/paper_input.dart';
-import 'package:polymer_elements/iron_pages.dart';
-import 'package:polymer_elements/paper_dialog.dart';
-import 'package:polymer_elements/paper_toggle_button.dart';
-
-import '../../tabular_vis.dart';
+import 'package:bezier_simple_connect_viewer/bezier_simple_connect_viewer.dart';
 import 'interaction_button.dart';
 import 'handsontable_wrapper.dart';
 import 'app_component.dart';
 import '../data/data_processing.dart';
-import 'paper_input_value_changed_directive.dart';
+import 'input_slider.dart';
+import 'component_with_drawer_inside.dart';
+import 'color-input.dart';
+
+//Angular-components
+import 'package:angular_components/app_layout/material_persistent_drawer.dart';
+import 'package:angular_components/material_dialog/material_dialog.dart';
+import 'package:angular_components/material_input/material_input.dart';
+import 'package:angular_components/material_input/material_number_accessor.dart';
 
 import 'package:js/js.dart';
 
@@ -59,10 +51,11 @@ class Selection{
 @Component(
     selector: 'data-grid',
     templateUrl: 'template/data_grid.html',
-    directives: const <dynamic>[InteractionButton, materialDirectives, PaperInputValueChangedDirective],
-    providers: const <dynamic>[InteractionHandler, DataTable, materialDirectives]
+    directives: const <dynamic>[InteractionButton, materialDirectives, coreDirectives, InputSlider, materialNumberInputDirectives, ColorInput],
+    providers: const <dynamic>[InteractionHandler, DataTable, materialProviders],
+    styleUrls: const ['template/scss/common.css', 'template/scss/data_grid.css', 'package:angular_components/app_layout/layout.scss.css',],
 )
-class DataGrid implements AfterViewInit, OnDestroy{
+class DataGrid extends ComponentWithDrawerInside implements AfterViewInit, OnDestroy{
   final Application _application;
   final DataTable _dataTable;
 
@@ -71,10 +64,12 @@ class DataGrid implements AfterViewInit, OnDestroy{
   @Output()
   Stream<int> get requestToChangeDiagram => _requestToChangeContent.stream;
 
+  @ViewChild('tableMainDrawer') MaterialPersistentDrawerDirective tableMainDrawer;
+  @ViewChild('dropZoneDiv') HtmlElement dropZoneDiv;
 
   static List<String> listOfTablesID = <String>[];
 
-  PaperDialog handleTable;
+  bool showHandleTableDialog = false;
 
   Element tableEditor;
   AppComponent _appComponent;
@@ -83,29 +78,36 @@ class DataGrid implements AfterViewInit, OnDestroy{
   String actualMatrixID;
   Selection selection;
   String controlsType = "edit-table";
-  PaperInput groupNumberSetter;
   InputElement uploadFile;
-  int groupNumber = 0;
 
-  String tableRow = "2";
-  String tableCol = "2";
+  int tableRow = 2;
+  int tableCol = 2;
   String minRandomValue = "100";
   String maxRandomValue = "1000";
   bool randomValuesEnabled = false;
   bool useRandomZeroesValue = true;
 
-  PaperInput minValue, maxValue;
-  PaperToggleButton randomZeroesToggleButton;
+  num minValue = 100.0;
+  num maxValue = 1000.0;
+  bool randomZeroesEnabled = false;
+  int selectedGroupNumber = 0;
+  String selectedGroupName = "";
+  bool uniqueScale = false;
+  bool mergeBlockInGroup = false;
+
   DivElement dropZone;
 
   bool showBlockSettings = false;
 
   bool setShowBlockSettings(){
-    if((selection.rowMin == 0 && selection.rowMax == 0) || (selection.colMin == 0 && selection.colMax == 0)){
+    if(((selection.rowMin == 0 && selection.rowMax == 0) || (selection.colMin == 0 && selection.colMax == 0))
+        && (!(selection.rowMin == 0 && selection.rowMax == 0 && selection.colMin == 0 && selection.colMax == 0))){
       var isRow = (selection.colMin == 0 && selection.colMax == 0);
       int tablePos = isRow ? selection.rowMin : selection.colMin;
       var prevSetGroupNumber = this.matrixData.getLabelGroupNumber(isRow, tablePos);
-      groupNumber = prevSetGroupNumber;
+      selectedGroupNumber = prevSetGroupNumber;
+      this.selectedGroupName = this.matrixData.getLabelGroupName(isRow, tablePos);
+      this.uniqueScale = this.matrixData.getLabelUniqueScale(isRow, tablePos);
       return true;
     }else{
       return false;
@@ -126,6 +128,8 @@ class DataGrid implements AfterViewInit, OnDestroy{
     this._dataTable.matrixData = this.matrixData.getDataForUI();
     ////print(this.matrixData.getLabels());
     selection = new Selection();
+
+    this.drawerVisibility = true;
   }
 
   void toggleTableEditorVisibility(){
@@ -143,31 +147,19 @@ class DataGrid implements AfterViewInit, OnDestroy{
 
   @override
   void ngAfterViewInit() {
-    Function valueChanged = allowInterop((dynamic changes, dynamic source) {
-      //print("$changes ----  $source");
-    });
     _dataTable.createTable("#table_container", allowInterop(tableValueChanged), allowInterop(tableSelectionChanged));
-    //this._dataTable.changeMatrixData(this._defaultMatrix, this._defaultMatrix.length, this._defaultMatrix[0].length);
-    //_dataTable.refreshTable();
 
-    tableEditor = querySelector("#table-editor-placeholder");
-    groupNumberSetter = querySelector("#group_number_setter") as PaperInput;
-    handleTable = querySelector("#handle_table") as PaperDialog;
-    uploadFile = querySelector("#file") as InputElement;
-    uploadFile.onChange.listen((e) => _onFileInputChange());
-    minValue = querySelector("#min_value_input").querySelector("paper-input") as PaperInput;
-    maxValue = querySelector("#max_value_input").querySelector("paper-input") as PaperInput;
-    dropZone = querySelector("#drop_zone") as DivElement;
+    dropZone = (dropZoneDiv as DivElement);
     dropZone.onDrop.listen(readFile);
     dropZone.onDragOver.listen(allowDrop);
-    randomZeroesToggleButton = querySelector("#random_zeroes") as PaperToggleButton;
-    //tableEditor.style.display = "none";
-
-    ////print(_dataTable.matrixData);
   }
 
-  void handleTables(){
+  /*void handleTables(){
     handleTable.open();
+  }*/
+
+  void toggleSidebar(){
+    this.tableMainDrawer.toggle();
   }
 
   void tableValueChanged(List<List<num>> changes, String source){
@@ -194,18 +186,53 @@ class DataGrid implements AfterViewInit, OnDestroy{
     //print(this.matrixData.getLabels());
   }
 
+  void tableRowChange(num value) => this.tableRow = value.toInt();
+
+  void tableColChange(num value) => this.tableCol = value.toInt();
+
+  void minValueChange(num value) => this.minValue = value.toInt();
+
+  void maxValueChange(num value) => this.maxValue = value.toInt();
+
+  void changeBlockColours(Color color){
+
+  }
+
   void tableSelectionChanged(List<int> tableSelection, String source){
     selection.changeFromArray(tableSelection);
     showBlockSettings = setShowBlockSettings();
   }
 
-  void changeLabelGroup(Event event){
+  void selectedGroupNumberChange(num newValue){
     var isRow = (selection.colMin == 0 && selection.colMax == 0);
     int tablePos = isRow ? selection.rowMin : selection.colMin;
-    this.groupNumberSetter = event.target as PaperInput;
-    this.matrixData.updateLabelInformation(isRow, tablePos, int.parse(this.groupNumberSetter.value as String));
+    //this.groupNumberSetter = event.target as PaperInput;
+    //this.matrixData.updateLabelInformation(isRow, tablePos, int.parse(this.groupNumberSetter.value as String));
+    this.matrixData.updateLabelInformation(isRow, tablePos, newGroup: newValue.toInt());
     this._application.tableChanged = true;
     //print(this.matrixData.getLabels());
+  }
+
+  void selectedGroupNameChange(String newValue){
+    var isRow = (selection.colMin == 0 && selection.colMax == 0);
+    int tablePos = isRow ? selection.rowMin : selection.colMin;
+
+    this.matrixData.updateLabelInformation(isRow, tablePos, newName: newValue);
+    this._application.tableChanged = true;
+
+  }
+
+  void selectedBlockUniqueScaleChange(MouseEvent newValue){
+    var isRow = (selection.colMin == 0 && selection.colMax == 0);
+    int tablePos = isRow ? selection.rowMin : selection.colMin;
+
+    this.matrixData.updateLabelInformation(isRow, tablePos, uniqueScale: this.uniqueScale);
+    this._application.tableChanged = true;
+  }
+
+  void mergeBlocksInGroupSelectedChange(MouseEvent newValue){
+    Label.mergeByGroup = this.mergeBlockInGroup;
+    this._application.tableChanged = true;
   }
 
   Future visualizeTable() async{
@@ -229,11 +256,13 @@ class DataGrid implements AfterViewInit, OnDestroy{
     this._application.tableChanged = true;
   }
 
-  String _crateCircosFileFormat() {
+  Future<String> _crateCircosFileFormat() async{
+    Completer<String> completer = new Completer<String>();
 
     if(this.matrixData.allLabel.length != Label.groupLabels[this.matrixData.diagramDataID].length){
-      return "#Using group and download matrix is not supported at the same time";
-      throw new StateError("Using group and download matrix is not supported at the same time");
+      completer.completeError("#Using group and download matrix is not supported at the same time");
+      //return "#Using group and download matrix is not supported at the same time";
+      //throw new StateError("Using group and download matrix is not supported at the same time");
     }
 
     StringBuffer sb = new StringBuffer();
@@ -272,12 +301,15 @@ class DataGrid implements AfterViewInit, OnDestroy{
       sb.write("\n");
     }
 
-    return sb.toString();
+    completer.complete(sb.toString());
+
+    return completer.future;
   }
 
   void downloadTable() {
-    var fileToDownload = _crateCircosFileFormat();
-    this._application.downloadFileToClient("table-${this.actualMatrixID}", fileToDownload);
+    _crateCircosFileFormat().then((String fileToDownload){
+      this._application.downloadFileToClient("table-${this.actualMatrixID}", fileToDownload);
+    });
   }
 
   void uploadJSONTable() {
@@ -285,12 +317,13 @@ class DataGrid implements AfterViewInit, OnDestroy{
     //throw new UnimplementedError("Implementation later");
   }
 
-  void _onFileInputChange() {
-    _onFilesSelected(uploadFile.files);
+  void onFileInputChange(Event event) {
+    _onFilesSelected((event.target as InputElement).files);
   }
 
   void _onFilesSelected(List<File> files) {
-    handleTable.close();
+    //handleTable.close();
+    showHandleTableDialog = false;
     for (var file in files) {
       FileReader fr = new FileReader();
       if(file.type != "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"){
@@ -310,7 +343,6 @@ class DataGrid implements AfterViewInit, OnDestroy{
     var table = decoder.tables['Munka1'];
     var maxCol = table.rows[0].length;
     var maxRow = table.rows.length;
-    int alma = 0;
 
     List columnOrder, rowOrder;
     if(table.rows.length > 2 && (table.rows[0][0] == "data" || table.rows[0][0] == null) && (table.rows[1][0] == "data" || table.rows[1][0] == null)){
@@ -419,7 +451,7 @@ class DataGrid implements AfterViewInit, OnDestroy{
       do {
         file = file.replaceAllMapped(new RegExp("××"), (Match m) =>"×");
       }while(file.contains(new RegExp("××")));
-      file = file.replaceAll(new RegExp("[×]"), "%");
+      file = file.replaceAll(new RegExp("[×]"), " ");
 
       file = file.replaceAllMapped(new RegExp("~%*[A-Z|a-z]"), (Match m) {
         return "~${m[0].substring(m[0].indexOf('%')+1)}";
@@ -600,25 +632,6 @@ class DataGrid implements AfterViewInit, OnDestroy{
     ////print(this.matrixData.getLabels());
   }
 
-  void useRandomNumbers(Event event){
-    PaperToggleButton randomToggleButton = event.target as PaperToggleButton;
-    this.randomValuesEnabled = randomToggleButton.checked;
-    if(randomToggleButton.checked){
-      minValue.attributes.remove("disabled");
-      maxValue.attributes.remove("disabled");
-      randomZeroesToggleButton.attributes.remove("disabled");
-    }else{
-      minValue.setAttribute("disabled", "");
-      maxValue.setAttribute("disabled", "");
-      randomZeroesToggleButton.setAttribute("disabled", "");
-    }
-  }
-
-  void useRandomZeroes(Event event){
-    PaperToggleButton randomZeroesToggleButton = event.target as PaperToggleButton;
-    this.useRandomZeroesValue = randomZeroesToggleButton.checked;
-  }
-
   void allowDrop(Event event){
     event.preventDefault();
   }
@@ -629,15 +642,16 @@ class DataGrid implements AfterViewInit, OnDestroy{
   }
 
   void createNewTable(Event event){
-    this.handleTable.close();
+    //this.handleTable.close();
+    this.showHandleTableDialog = false;
     Map<String, InputData> result;
     if(DataGrid.listOfTablesID.isEmpty){
       result = this._application.getInputData();
       DataGrid.listOfTablesID.add(result.keys.first);
     }else{
       result = this._application.getInputData(DataGrid.listOfTablesID.last,
-          [int.parse(this.tableRow) + 1,1,int.parse(this.tableCol) + 1,1,1,
-          this.useRandomZeroesValue ? 1 : 0, int.parse(this.minRandomValue), int.parse(this.maxRandomValue)], !this.randomValuesEnabled, true);
+          <int>[this.tableRow + 1,1,this.tableCol + 1,1,1,
+          this.useRandomZeroesValue ? 1 : 0, this.minValue, this.maxValue], !this.randomValuesEnabled, true);
     }
 
     actualMatrixID = result.keys.first;

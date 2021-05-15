@@ -8,8 +8,8 @@ class ShapeText extends ShapeSimple {
   String _label = "";
   Matrix4 _labelMatrix;
 
-  Geometry fontGeometry;
-  Geometry baseFontGeometry;
+  TextGeometryBuilder fontGeometry;
+  TextGeometryBuilder baseFontGeometry;
 
   ShapeText(List<LineGeom<double, HomogeneousCoordinate>> lines,
       Diagram diagram, [ShapeForm parent = null, this._label])
@@ -34,9 +34,8 @@ class ShapeText extends ShapeSimple {
 
     this._label = label;
 
-
-    var fontShapes = FontUtils.generateShapes(this._label, 10);
-    this.fontGeometry = new ShapeGeometry(fontShapes, curveSegments: 20);
+    var fontShapes = generateShapes(this._label, 6);
+    this.fontGeometry = new TextGeometryBuilder(fontShapes, 20);
 
     fontGeometry.computeBoundingBox();
     var center = fontGeometry.boundingBox.center;
@@ -50,63 +49,74 @@ class ShapeText extends ShapeSimple {
     var pos = labelCircle.getPointFromPolarCoordinate(label_polar_pos);
     var vec2 = pos.getDescartesCoordinate() as Vector2;
 
-    var helper = (pos.getDescartesCoordinate() as Vector2).normalize();
+    var helper = (pos.getDescartesCoordinate() as Vector2)..normalize();
     var textVector = new Vector2(1.0, 0.0);
     var rotValue = 0.0;
     if(this._diagram.textDirection == 0) {
-      if (label_polar_pos >= PI / 2 && label_polar_pos < (PI)) {
+      /*if (label_polar_pos >= pi / 2 && label_polar_pos < (pi)) {
         textVector = new Vector2(-1.0, 0.0);
-        rotValue = ((PI / 2) - acos(helper.dot(textVector)));
+        rotValue = ((pi / 2) - acos(helper.dot(textVector)));
         //center = new Vector3(center.x, -center.y, 0.0);
-      } else if (label_polar_pos >= PI && label_polar_pos < (3 * (PI / 2))) {
+      } else if (label_polar_pos >= pi && label_polar_pos < (3 * (pi / 2))) {
         textVector = new Vector2(-1.0, 0.0);
-        rotValue = ((PI / 2) + acos(helper.dot(textVector)));
-        rotValue += PI;
-        vec2 += helper.clone().scale(fontGeometry.boundingBox.max.y as double);
+        rotValue = ((pi / 2) + acos(helper.dot(textVector)));
+        rotValue += pi;
+        vec2 += helper.clone()..scale(fontGeometry.boundingBox.max.y as double);
         //center = new Vector3(-center.x, center.y, 0.0);
       } else
-      if (label_polar_pos >= (3 * (PI / 2)) && label_polar_pos < (2 * PI)) {
+      if (label_polar_pos >= (3 * (pi / 2)) && label_polar_pos < (2 * pi)) {
         textVector = new Vector2(1.0, 0.0);
-        rotValue = (((PI / 2) - acos(helper.dot(textVector))) + PI);
-        rotValue += PI;
-        vec2 += helper.clone().scale(fontGeometry.boundingBox.max.y as double);
+        rotValue = (((pi / 2) - acos(helper.dot(textVector))) + pi);
+        rotValue += pi;
+        vec2 += helper.clone()..scale(fontGeometry.boundingBox.max.y as double);
         //center = new Vector3(-center.x, center.y, 0.0);
       } else {
         textVector = new Vector2(1.0, 0.0);
-        rotValue = ((2 * PI) - ((PI / 2) - acos(helper.dot(textVector))));
+        rotValue = ((2 * pi) - ((pi / 2) - acos(helper.dot(textVector))));
         //center = new Vector3(-center.x, -center.y, 0.0);
+      }*/
+      var valueToDecide = (label_polar_pos % MathFunc.PITwice) / pi;
+      if (valueToDecide <= 1.0) {
+        textVector = new Vector2(1.0, 0.0);
+        rotValue = ((2 * pi) - ((pi / 2) - acos(helper.dot(textVector))));
+      }else if(valueToDecide <= 1.5){
+        textVector = new Vector2(-1.0, 0.0);
+        rotValue = (pi/2) + acos(helper.dot(textVector));
+      }else{
+        textVector = new Vector2(1.0, 0.0);
+        rotValue = (pi + (pi/2) - acos(helper.dot(textVector)));
       }
     }else {
-      if (label_polar_pos >= PI / 2 && label_polar_pos < (PI)) {
+      if (label_polar_pos >= pi / 2 && label_polar_pos < (pi)) {
         textVector = new Vector2(-1.0, 0.0);
-        rotValue = ((PI / 2) - acos(helper.dot(textVector)));
-        rotValue -= (PI / 2);
+        rotValue = ((pi / 2) - acos(helper.dot(textVector)));
+        rotValue -= (pi / 2);
         vec2 +=
-            helper.clone().scale(fontGeometry.boundingBox.max.x / 2 as double);
+            helper.clone()..scale(fontGeometry.boundingBox.max.x / 2 as double);
         //center = new Vector3(center.x, -center.y, 0.0);
-      } else if (label_polar_pos >= PI && label_polar_pos < (3 * (PI / 2))) {
+      } else if (label_polar_pos >= pi && label_polar_pos < (3 * (pi / 2))) {
         textVector = new Vector2(-1.0, 0.0);
-        rotValue = ((PI / 2) + acos(helper.dot(textVector)));
-        rotValue += PI;
-        rotValue += (PI / 2);
+        rotValue = ((pi / 2) + acos(helper.dot(textVector)));
+        rotValue += pi;
+        rotValue += (pi / 2);
         vec2 +=
-            helper.clone().scale(fontGeometry.boundingBox.max.x / 2 as double);
+            helper.clone()..scale(fontGeometry.boundingBox.max.x / 2 as double);
         //center = new Vector3(-center.x, center.y, 0.0);
       } else
-      if (label_polar_pos >= (3 * (PI / 2)) && label_polar_pos < (2 * PI)) {
+      if (label_polar_pos >= (3 * (pi / 2)) && label_polar_pos < (2 * pi)) {
         textVector = new Vector2(1.0, 0.0);
-        rotValue = (((PI / 2) - acos(helper.dot(textVector))) + PI);
-        rotValue += PI;
-        rotValue -= (PI / 2);
+        rotValue = (((pi / 2) - acos(helper.dot(textVector))) + pi);
+        rotValue += pi;
+        rotValue -= (pi / 2);
         vec2 +=
-            helper.clone().scale(fontGeometry.boundingBox.max.x / 2 as double);
+            helper.clone()..scale(fontGeometry.boundingBox.max.x / 2 as double);
         //center = new Vector3(-center.x, center.y, 0.0);
       } else {
         textVector = new Vector2(1.0, 0.0);
-        rotValue = ((2 * PI) - ((PI / 2) - acos(helper.dot(textVector))));
-        rotValue += (PI / 2);
+        rotValue = ((2 * pi) - ((pi / 2) - acos(helper.dot(textVector))));
+        rotValue += (pi / 2);
         vec2 +=
-            helper.clone().scale(fontGeometry.boundingBox.max.x / 2 as double);
+            helper.clone()..scale(fontGeometry.boundingBox.max.x / 2 as double);
         //center = new Vector3(-center.x, -center.y, 0.0);
       }
     }

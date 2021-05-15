@@ -182,6 +182,41 @@ class NumberRange<T extends num> implements RangeMath<T>{
     return returnList;
   }
 
+  List<RangeMath<T>> dividePartsByValueInside(List<T> values,
+      {List<T> spaceBetweenParts,
+        bool differentSpaces: false,
+        T defaultSpaceBetweenParts: null}) {
+
+    var sumOfValues = values.reduce((a,b) => (a+b));
+
+    defaultSpaceBetweenParts = defaultSpaceBetweenParts == null
+        ? (sumOfValues * 0.1 / (values.length-1)) as T
+        : (defaultSpaceBetweenParts * sumOfValues) / (values.length-1) as T ;
+
+    T sumOfSpaces;
+    if(differentSpaces){
+      sumOfSpaces = spaceBetweenParts.reduce((a,b) => (a+b));
+    }else{
+      sumOfSpaces = defaultSpaceBetweenParts * (values.length-1);
+    }
+
+    var divideLength = this.length / (sumOfValues + sumOfSpaces);
+
+    var beginHelper = this._begin;
+    var endHelper = this._end;
+
+    var returnList = new List<RangeMath<T>>(values.length);
+    for(var i = 0; i < values.length; i++){
+      endHelper = beginHelper + ((divideLength * values[i]) * this.direction) as T;
+      returnList[i] = new NumberRange.fromNumbers(beginHelper, endHelper);
+      if(differentSpaces){
+        beginHelper = endHelper + ((divideLength * spaceBetweenParts[i]) * this.direction) as T;
+      }else {
+        beginHelper = endHelper + ((divideLength * defaultSpaceBetweenParts) * this.direction) as T;
+      }
+    }
+    return returnList;
+  }
 
   NumberRange<T> mergeRanges(List<RangeMath<T>> listOfRanges) {
     listOfRanges.sort();
@@ -189,7 +224,7 @@ class NumberRange<T extends num> implements RangeMath<T>{
   }
 
 
-  List<RangeMath> divideEqualParts(int numberOfParts,
+  List<RangeMath<T>> divideEqualParts(int numberOfParts,
                                   {List<T> spaceBetweenParts,
                                   bool differentSpaces: false,
                                   T defaultSpaceBetweenParts: null}) {
@@ -210,10 +245,10 @@ class NumberRange<T extends num> implements RangeMath<T>{
     var beginHelper = this._begin;
     var endHelper = this._end;
 
-    var returnList = new List<RangeMath>(numberOfParts);
+    var returnList = new List<RangeMath<T>>(numberOfParts);
     for(var i = 0; i < numberOfParts; i++){
       endHelper = beginHelper + (divideLength * this.direction) as T;
-      returnList[i] = new NumberRange.fromNumbers(beginHelper, endHelper);
+      returnList[i] = new NumberRange<T>.fromNumbers(beginHelper, endHelper);
       beginHelper = endHelper + (defaultSpaceBetweenParts * this.direction);
     }
     return returnList;
@@ -221,20 +256,22 @@ class NumberRange<T extends num> implements RangeMath<T>{
 
 
   T getMaxValue() {
-    if(this._end < this._begin){
+    return max(this._end, this._begin);
+    /*if(this._end < this._begin){
       return this._begin;
     }else{
       return this._end;
-    }
+    }*/
   }
 
 
   T getMinValue() {
-    if(this._end > this._begin){
+    return min(this._end, this._begin);
+    /*if(this._end > this._begin){
       return this._begin;
     }else{
       return this._end;
-    }
+    }*/
   }
 
 

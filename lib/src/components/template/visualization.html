@@ -9,7 +9,48 @@
 
 </style>
 
-<paper-drawer-panel id="sideDrawer" disable-swipe="true" disable-edge-swipe="true" drawer-width="80px" >
+<material-drawer persistent #visualizationMainSidebar="drawer" id="visSideBar" [visible]="drawerVisibility" class="main-sidebar">
+    <div id="visDrawerButtonCont" *deferredContent>
+
+        <material-button icon class="sideBarButton" id="basic" [ngClass]="{selectedIcon: selectedSidebarButton('basic')}" (click)="changeSelectedSidebarButton('basic')">
+            <material-icon class="sideBarIcon" icon="photo"></material-icon>
+        </material-button>
+        <material-button icon class="sideBarButton" id="bezier" [ngClass]="{selectedIcon: selectedSidebarButton('bezier')}" (click)="changeSelectedSidebarButton('bezier')">
+            <material-icon class="sideBarIcon" icon="tune"></material-icon>
+        </material-button>
+        <material-button icon class="sideBarButton" id="sorting" [ngClass]="{selectedIcon: selectedSidebarButton('sorting')}" (click)="changeSelectedSidebarButton('sorting')">
+            <material-icon class="sideBarIcon" icon="sort"></material-icon>
+        </material-button>
+        <material-button icon class="sideBarButton" id="style" [ngClass]="{selectedIcon: selectedSidebarButton('style')}" (click)="changeSelectedSidebarButton('style')">
+            <material-icon class="sideBarIcon" icon="brush"></material-icon>
+        </material-button>
+        <material-button icon class="sideBarButton" (click)="downloadImage()">
+            <material-icon class="sideBarIcon" icon="file_download"></material-icon>
+        </material-button>
+        <material-button icon class="sideBarButton" [ngClass]="{selectedIcon: selectedSidebarButton('heatmap')}" (click)="changeSelectedSidebarButton('heatmap')">
+            <img class="icon-img" src="images/icons/heatmap_48.png"/>
+        </material-button>
+    </div>
+</material-drawer>
+
+<material-content class="main-sidebar-content fit-content" [ngClass]="{matDrawerCollapsed: !visualizationMainSidebar.visible}">
+
+    <div>
+        <material-drawer persistent #visSettings="drawer" id="visSettingsSideBar" [visible]="handleSecondSidebarVisibility()" class="secondary-sidebar" (visibleChange)="settingsVisibilityChange($event)">
+
+            <diagram-settings [selectedSettings]="selectedSidebarButtonID" [sidebarVisibility]="settingsSidebarVisibility" #visualizationSettings (lockSideBar)="lockSidebar($event)" class="full-height"></diagram-settings>
+
+        </material-drawer>
+
+        <material-content class="secondary-sidebar-content fit-content" [ngClass]="{matDrawerCollapsed: !visSettings.visible}">
+            <div id="canvas_cont" class="fit-content" (mousewheel)="mouseWheel($event)" (mouseup)="mouseUp($event)" (mousedown)="mouseDown($event)" (mousemove)="mouseOver($event)" (click)="handleCanvasMouseClick($event)"></div>
+        </material-content>
+
+    </div>
+
+</material-content>
+
+<!--<paper-drawer-panel id="sideDrawer" disable-swipe="true" disable-edge-swipe="true" drawer-width="80px" >
     <div drawer id="sidebar" class="fit center-justified horizontal layout sidebar">
         <div class="vertical layout" id="table_interaction_button_container">
             <paper-icon-button class="sidebar-selector-icons" id="basic" icon="image:photo" (click)="openSettings($event)"></paper-icon-button>
@@ -29,4 +70,4 @@
             </div>
         </paper-drawer-panel>
     </div>
-</paper-drawer-panel>
+</paper-drawer-panel>!-->

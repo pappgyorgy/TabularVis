@@ -13,15 +13,31 @@ abstract class Label implements Comparable<Label>{
   /// Store all the ID of the generated Visualization object
   static List<String> listOfIDs = new List<String>();
 
+  static bool mergeByGroup = false;
+
   /// Check is the given labels [one] and [two] are siblings or not
   static bool createLabelSibling(Label one, Label two){
     var retVal = false;
     if(one.name.compareTo(two.name) == 0){
-      retVal = true;
-      if(!two.isPartialLabel){
-        two.mainLabel = one;
-        if(!one.isPartialLabel){
-          one.mainLabel = one;
+      if(!mergeByGroup) {
+        retVal = true;
+        if (!two.isPartialLabel) {
+          two.mainLabel = one;
+          two.groupNumber = one.groupNumber;
+          if (!one.isPartialLabel) {
+            one.mainLabel = one;
+          }
+        }
+      }else{
+        if(one.groupNumber == two.groupNumber){
+          retVal = true;
+          if (!two.isPartialLabel) {
+            two.mainLabel = one;
+            two.groupNumber = one.groupNumber;
+            if (!one.isPartialLabel) {
+              one.mainLabel = one;
+            }
+          }
         }
       }
     }
@@ -154,4 +170,6 @@ abstract class Label implements Comparable<Label>{
 
   /// Hard copy the label object
   Label copy();
+
+  bool uniqueScale;
 }

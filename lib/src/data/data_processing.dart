@@ -1,13 +1,15 @@
 library dataProcessing;
 
-import 'package:angular2/core.dart';
+import 'package:angular/core.dart';
 import '../math/math.dart' show RangeMath, MathFunc, ColorRange, NumberRange, RangeCloseType;
-import 'package:three/three.dart' show Color;
-import '../geometry/geometry.dart' show ShapeType;
+import '../graphic/render.dart' show Color;
+import '../geometry/geometry.dart' show ShapeType, ShapeForm, ShapeBezier, ShapeLine, ShapeSimple, ShapeText, ShapePoincare, ShapeHeatmap;
 import 'dart:convert';
 import 'dart:math';
 import 'dart:core';
 import 'package:logging/logging.dart';
+import 'dart:collection';
+import 'dart:async';
 
 //Diagram
 part 'data_matrix.dart';
@@ -38,6 +40,9 @@ part 'sort/diagramStateFull.dart';
 part 'sort/diagram_geom_state.dart';
 part 'sort/sort_info_data.dart';
 part 'sort/diagramStateFullWithoutCopy.dart';
+part 'sort/diagramStateMatrix.dart';
+part 'sort/state_visobj_connection.dart';
+part 'sort/state_visobj_connection_mod.dart';
 
 /// Helps to handle the input data
 /// Gives an input data from the give raw input
@@ -47,11 +52,13 @@ class DataProcessing{
   /// The input data for the visualization
   Map<String, InputData> _inputData;
 
+  Map<String, bool> inputDataChanged;
+
   /// Simple constructor
   ///
   /// initialize the input data
   DataProcessing(){
-    _inputData = new Map<String, InputData>();
+    this._inputData = new Map<String, InputData>();
   }
 
   /// Create a new input data with the given [id] and [data]
@@ -82,12 +89,12 @@ class DataProcessing{
 
   }
 
-  VisualObject getInputDataVisualObject(String ID){
+  VisualObject getInputDataVisualObject(String ID, {bool resetDefaultOrder: false}){
     if(this._inputData[ID] == null){
       throw new StateError("There is no matrix with the given ID: $ID");
     }
 
-    return this._inputData[ID].getVisualizationObjectHierarchy();
+    return this._inputData[ID].getVisualizationObjectHierarchy();;
   }
 
 }

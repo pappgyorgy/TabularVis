@@ -1,0 +1,69 @@
+:host{
+  margin-top: 10px;
+}
+
+.inc-dec-button-horizontal{
+  height: 45px;
+  width: 35px;
+  min-width: 35px!important;
+  top: 3px;
+  margin: 0 2px 0 2px !important;
+  ::ng-deep {
+    .content{
+      padding: 11px 0 0 0 !important;
+    }
+  }
+}
+
+.materialInput.centered{
+  ::ng-deep{
+    input{
+      text-align: center;
+    }
+  }
+}
+
+.inc-dec-button-vertical{
+  height: 45px;
+  top: 3px;
+  margin: 0 2px 0 2px !important;
+  ::ng-deep {
+    .content {
+      padding: 11px 0 0 0 !important;
+    }
+  }
+
+  min-width: initial !important;
+  width: 100%;
+}
+
+.marginBottom{
+  margin: 0 2px 16px 2px !important;
+}
+
+.settingsInput{
+  color: white !important;
+  line-height: 12px !important;
+  padding: 0 5px 0 5px !important;
+  width: 100%;
+  top: 12px;
+  flex: 1;
+}
+
+.horizontalHeight{
+  height: 70px;
+}
+
+.verticalHeight{
+  height: 170px;
+}
+
+.horizontalLayout{
+  display: flex;
+  flex-direction: row;
+}
+
+.verticalLayout{
+  display: flex;
+  flex-direction: column;
+}

@@ -2,7 +2,7 @@
 library handsontable;
 
 import 'package:js/js.dart';
-import 'package:angular2/angular2.dart';
+import 'package:angular/angular.dart';
 
 @Injectable()
 @JS()

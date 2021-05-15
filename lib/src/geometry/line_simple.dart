@@ -67,5 +67,7 @@ class LineSimple<T extends double, F extends HomogeneousCoordinate<dynamic>> imp
   }
 
   @override
-  void update() => super.update();
+  void update(){
+
+  }
 }

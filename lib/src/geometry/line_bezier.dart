@@ -20,6 +20,11 @@ class Segment<F extends HomogeneousCoordinate<dynamic>>{
 
 }
 
+enum BezierType{
+  SIMPLE,
+  RATIONAL
+}
+
 class LineBezier<T extends double, F extends HomogeneousCoordinate<dynamic>> implements LineGeom<T, F>{
 
   @Deprecated("GemetryData class will be deleted")
@@ -29,6 +34,10 @@ class LineBezier<T extends double, F extends HomogeneousCoordinate<dynamic>> imp
 
   Arc<T, F> _lineArc;
 
+  BezierType type = BezierType.SIMPLE;
+
+  List<double> weights = [1.0, 0.5, 0.5, 0.5, 1.0];
+  //List<double> weights = [1.0, 3.0, 8.0, 3.0, 1.0];
 
   //percent
   static double crest = 0.0;
@@ -70,13 +79,38 @@ class LineBezier<T extends double, F extends HomogeneousCoordinate<dynamic>> imp
   List<F> getLinePoints([int numberOfSegment = 0]){
     List<F> retVal = new List<F>();
 
-    var controlPoints = allControlPoints;
-    var increaseNumber = 1.0/segmentNumber;
-    if(numberOfSegment != 0){
-      increaseNumber = 1.0/numberOfSegment;
+    numberOfSegment = numberOfSegment == 0 ? this.segmentNumber : numberOfSegment;
+
+    if(this.type == BezierType.SIMPLE){
+      for(var t = 0.0; t < 1.0; t += 1.0/numberOfSegment) {
+        int n = 4;
+        double bernsteinPolynom, x = 0.0, y = 0.0;
+        for (int i = 0; i < 5; i++) {
+          bernsteinPolynom = BinomialCoefficient(n, i) * pow(1 - t, n - i) * pow(t, i);
+
+          x += bernsteinPolynom * allControlPoints[i].x;
+          y += bernsteinPolynom * allControlPoints[i].y;
+        }
+        retVal.add(new HomogeneousCoordinate(CoordinateType.threeDim, x, y, 0.0, 1.0));
+      }
+    }else{
+      List<double> listOfBernsteinPolynom = new List<double>(5);
+      for(var t = 0.0; t < 1.0; t += 1.0/numberOfSegment) {
+        int n = 4;
+        double sumOfBernsteinPolynom = 0.0, x = 0.0, y = 0.0;
+        for (int i = 0; i < 5; i++) {
+          listOfBernsteinPolynom[i] = BinomialCoefficient(n, i) * pow(1 - t, n - i) * pow(t, i) * weights[i];
+          sumOfBernsteinPolynom += listOfBernsteinPolynom[i];
+        }
+        for (int i = 0; i < 5; i++) {
+          x += (listOfBernsteinPolynom[i] / sumOfBernsteinPolynom) * allControlPoints[i].x;
+          y += (listOfBernsteinPolynom[i] / sumOfBernsteinPolynom) * allControlPoints[i].y;
+        }
+        retVal.add(new HomogeneousCoordinate(CoordinateType.threeDim, x, y, 0.0, 1.0));
+      }
     }
 
-    for(var t = 0.0; t < 1.0; t += increaseNumber){
+    /*for(var t = 0.0; t < 1.0; t += 1.0/numberOfSegment){
       HomogeneousCoordinate res = new HCoordinate3D(new Vector4(0.0,0.0,0.0,1.0));
       int n = 4;
       for (int i = 0; i < 5; i++)
@@ -84,11 +118,14 @@ class LineBezier<T extends double, F extends HomogeneousCoordinate<dynamic>> imp
         var biCoeff = BinomialCoefficient(n, i);
         var oneMinusT = pow(1 - t, n - i);
         var powT = pow(t, i);
-        res.x += biCoeff * oneMinusT * powT * controlPoints[i].x;
-        res.y += biCoeff * oneMinusT * powT * controlPoints[i].y;
+        res.x += biCoeff * oneMinusT * powT * allControlPoints[i].x;
+        res.y += biCoeff * oneMinusT * powT * allControlPoints[i].y;
       }
+
+
       retVal.add(res.clone() as F);
-    }
+    }*/
+
     return retVal;
   }
 
@@ -105,7 +142,7 @@ class LineBezier<T extends double, F extends HomogeneousCoordinate<dynamic>> imp
 
   List<F> get crestControlPoints{
     var retVal = new List<F>();
-    var crestLength = (radius + (this.effectiveBezierRadius - radius)) * crest;
+    var crestLength = (-(this.effectiveBezierRadius - radius)) * crest;
     retVal.add(crestControlPointHelperOne.getPointBasedOnLength(crestLength));
     retVal.add(crestControlPointHelperTwo.getPointBasedOnLength(crestLength));
     return retVal;

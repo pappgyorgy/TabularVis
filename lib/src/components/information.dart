@@ -1,7 +1,7 @@
-import 'package:angular2/core.dart';
+import 'package:angular/core.dart';
 
 //Polymer dart elements
-import 'package:polymer_elements/paper_card.dart';
+
 
 @Component(
     selector: 'information',

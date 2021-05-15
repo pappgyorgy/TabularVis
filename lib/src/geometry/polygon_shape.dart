@@ -9,10 +9,10 @@ enum Triangulation{
 class PolygonShape implements Polygon{
 
   List<double> _polygonVertices;
-  List<double> _polygonInnerContourVertices;
+  //List<double> _polygonInnerContourVertices;
   List<double> _contourVertices;
   List<int> _polygonFaces;
-  List<int> _polygonInnerContourFaces;
+  //List<int> _polygonInnerContourFaces;
   List<int> _contourFaces;
   Color polyColor;
   Color contourColor;
@@ -148,17 +148,18 @@ class PolygonShape implements Polygon{
     var dataForTriangulation = this._dataForTriangulationDart(0);
 
     this._polygonFaces = new List<int>();
-    (ShapeUtils.triangulateShape(dataForTriangulation, <dynamic>[]) as List)
+    var resultOfTriangulation = triangulateShape(dataForTriangulation, []);
+    /*(triangulateShape(dataForTriangulation, []) as List)
         .forEach((List<int> face){
       this._polygonFaces.addAll(face);
     });
 
     this._contourFaces = new List<int>();
     var dataForTriangulation2 = this._dataForTriangulationDart(1);
-    (ShapeUtils.triangulateShape(dataForTriangulation2, <dynamic>[]) as List)
+    (triangulateShape(dataForTriangulation2, []) as List)
         .forEach((List<int> face){
       this._contourFaces.addAll(face);
-    });
+    });*/
   }
 
   List<Face3> _getFacesFromRawData(int type){
@@ -170,7 +171,7 @@ class PolygonShape implements Polygon{
     Color faceVertexColor = (type == 0) ? this.polyColor : this.contourColor;
     List<Color> vertexColors = <Color>[faceVertexColor, faceVertexColor, faceVertexColor];
     for(var i = 0; i < facesToWorks.length; i+= 3){
-      retVal.add(new Face3(
+      retVal.add(new Face3Ext.withNormalsColors(
           facesToWorks[i], facesToWorks[i+1], facesToWorks[i+2],
           vertexNormals, vertexColors, 1));
     }

@@ -31,8 +31,34 @@ class ObjectVis extends VisualObject{
   /// The connection between segments
   VisConnection _connection;
 
-  @Deprecated("No usage")
-  int get indexInParent => this._indexInParent;
+  /// Value for modify objects height;
+  double _scaling = 1.0;
+
+  @override
+  /// Value for modify objects height;
+  double get scaling => _scaling;
+
+  RangeMath<double> range;
+
+  @override
+  /// Set the value for modify objects height;
+  set scaling(double value) {
+    _scaling = value;
+  }
+
+  @override
+  /// Gets the objects height with scaling
+  double get heightValue {
+    if(parent != null){
+      if(parent.parent != null){
+        return this.value * this._parent.parent.scaling * this.parent.scaling;
+      }else{
+        return this.value * this.parent.scaling;
+      }
+    }else{
+      return this.value * this.scaling;
+    }
+  }
 
   VisualObject get parent{
     return this._parent;
@@ -41,9 +67,18 @@ class ObjectVis extends VisualObject{
   /// Get the value of the segment
   dynamic get value => this._value;
 
+  int get index => this._label.index;
+
+  void set index(int newIndex){
+    if(this._parent != null){
+      this._parent.childrenIDsInOrder[newIndex] = this.id;
+    }
+    this._label.index = newIndex;
+  }
+
   /// Get the list of the values of the children
-  List<dynamic> get getChildrenValues{
-    var result = new List<dynamic>(this._children.length);
+  List<num> get getChildrenValues{
+    var result = new List<num>(this._children.length);
     var index = 0;
     this._children.forEach((String key, VisualObject element){
       result[index++] = element.value;
@@ -53,6 +88,40 @@ class ObjectVis extends VisualObject{
 
   /// Get the ID of the segment
   String get id => this._label.id;
+
+  String get groupId{
+    switch(this.role){
+      case VisualObjectRole.GROUP:
+        return this._label.id;
+        break;
+      case VisualObjectRole.BLOCK:
+        return this.parent.id;
+        break;
+      case VisualObjectRole.BAR:
+        return this.parent.parent.id;
+        break;
+      default:
+        return "";
+        break;
+    }
+  }
+
+  String get segmentId{
+    switch(this.role){
+      case VisualObjectRole.GROUP:
+        throw new StateError("Group element does not has a segment parent element");
+        break;
+      case VisualObjectRole.BLOCK:
+        return this.label.id;
+        break;
+      case VisualObjectRole.BAR:
+        return this.parent.id;
+        break;
+      default:
+        return "";
+        break;
+    }
+  }
 
   /// Get the Label information of the segment
   Label get label => this._label;
@@ -80,9 +149,6 @@ class ObjectVis extends VisualObject{
     this._parent = newParent;
   }
 
-  @Deprecated("No usage")
-  void set indexInParent(int newIndex) {this._indexInParent = newIndex;}
-
   /// Simple constructor
   ///
   /// Visual object with basic information: [label] and [value] and optional [id]
@@ -94,7 +160,9 @@ class ObjectVis extends VisualObject{
     }else{
       this._label.id = id;
     }
+    this.childrenIDsInOrder = new Map<int, String>();
     this._parent = null;
+    this.role = VisualObjectRole.ROOT;
     this._children = new Map<String, ObjectVis>();
   }
 
@@ -108,12 +176,64 @@ class ObjectVis extends VisualObject{
       this._label.id = MathFunc.generateUniqueID(Label.listOfIDs);
 
     this._children = new Map<String, ObjectVis>();
+    this.childrenIDsInOrder = new Map<int, String>();
 
     this._parent.addChild(this);
 
     if(this.value is num){
       _propagateValueToParent(this);
     }
+  }
+
+  double _getValueOfChildren(Function typeOfValue, [int recursiveLevel = 0]){
+    if(this._children.isEmpty){
+      return 0.0;
+    }else{
+      if(recursiveLevel > 0){
+        List<double> maxValue = new List(this._children.length);
+        int i = 0;
+        this._children.forEach((String key, ObjectVis child){
+          maxValue[i] = child._getValueOfChildren(typeOfValue, recursiveLevel - 1);
+        });
+        return maxValue.reduce(max);
+      }else{
+        return this.getChildrenValues.reduce(max);
+      }
+    }
+  }
+
+  double getMaxValueOfChildren({int recursiveLevel = 0}){
+    return this._getValueOfChildren(max, recursiveLevel);
+  }
+
+  double getMinValueOfChildren({int recursiveLevel = 0}){
+    return this._getValueOfChildren(min, recursiveLevel);
+  }
+
+  int get containsUniqueBlock{
+    int sum = 0;
+    this._children.forEach((String key, ObjectVis child){
+      if(child.label.uniqueScale){
+        sum++;
+      }
+    });
+    return sum;
+  }
+
+  int getRangeBetweenLine(double maxValue, int numberOfLine){
+    if(this.label.uniqueScale){
+      return (this.getMaxValueOfChildren() ~/ numberOfLine);
+    }else if(this.tickValueWasModified){
+      return this.tickIncValue.toInt();
+    }else{
+      return maxValue ~/ numberOfLine;
+    }
+  }
+
+  void performFunctionOnChildren(Function func){
+    this._children.forEach((String key, VisualObject child){
+      func(key, child);
+    });
   }
 
   /// Updates the value and propagates the change through the parents
@@ -140,6 +260,9 @@ class ObjectVis extends VisualObject{
     return new List.from(this._children.values);
   }
 
+  /// Get the map iterable of the children
+  Iterable<VisualObject> get childrenIterable => this._children.values;
+
   /// Get the list of the children
   Map<String, int> get getChildrenWithIndex{
     var retVal = new Map<String, int>();
@@ -157,11 +280,35 @@ class ObjectVis extends VisualObject{
   /// Gives the object's number of the children
   int get numberOfChildren => this._children.length;
 
+  /// Returns child obj with [id]s
+  VisualObject getChildByIDs(String firstID, [ int num = 0, String secondID = "", String thirdID = "" ]){
+    switch(num){
+      case 0: return this._children[firstID];
+        break;
+      case 1: return this._children[firstID]._children[secondID];
+        break;
+      case 2: return this._children[firstID]._children[secondID]._children[thirdID];
+        break;
+      default:
+        throw new StateError("Wrong number of IDs given");
+        break;
+    }
+    /*if (this._children.containsKey(firstID)) {
+      if(secondID.isNotEmpty && this._children[firstID]._children.containsKey(secondID)){
+          if(thirdID.isNotEmpty && this._children[firstID]._children[secondID]._children.containsKey(thirdID)){
+            return this._children[firstID]._children[secondID]._children[thirdID];
+          }else
+            return this._children[firstID]._children[secondID];
+      }else
+        return this._children[firstID];
+    }*/
+  }
+
   /// Returns child obj with [id]
   /// Default only search within its children,
   /// but we can perform a recursive search with [recursive] option
   VisualObject getChildByID(String id, [bool recursive = false]) {
-    if (isChildOfElement(id)) {
+    if (this._children.containsKey(id)) {
       return this._children[id];
     } else {
       if(recursive){
@@ -232,17 +379,22 @@ class ObjectVis extends VisualObject{
 
   /// Add [element] as child
   VisualObject addChild(VisualObject element){
+    if(this.childrenIDsInOrder.containsKey(element.index)){
+      throw new StateError("You are trying to add a new element with an index which is alredy used by one of the child element");
+    }else{
+      this.childrenIDsInOrder[element.index] = element.id;
+    }
     return this._children[element.id] = (element as ObjectVis);
   }
 
   /// Creates new child from [newChildLabel] and [value] if it not exists already and returns with it
   /// It it is already exists then this will be the return value
-  VisualObject createChild(Label newChildLabel, dynamic value, [VisualObjectRole role = VisualObjectRole.SEGMENT]){
+  VisualObject createChild(Label newChildLabel, dynamic value, [VisualObjectRole role = VisualObjectRole.BLOCK]){
     if(!this.isChildOfElement(newChildLabel.id)){
       var newElement = new ObjectVis.withParent(
           newChildLabel, value, this, generateID: false);
       newElement.role = role;
-      this.addChild(newElement);
+      //this.addChild(newElement);
     }
     return this._children[newChildLabel.id];
   }
@@ -308,11 +460,15 @@ class ObjectVis extends VisualObject{
     }*/
   }
 
-  @Deprecated("No usage")
-  void _swapChildrenIndexValues(String idOne, String idTwo) {
-    int helper = this._children[idOne].indexInParent;
-    getChildByID(idOne).indexInParent = this._children[idTwo].indexInParent;
-    getChildByID(idTwo).indexInParent = helper;
+  void swapChildrenIndexValues(String idToMove, String idToReplace) {
+    int indexToReplace = this._children[idToReplace].index;
+    int indexToMove = this._children[idToMove].index;
+
+    //this.childrenIDsInOrder[indexToReplace] = idToMove;
+    //this.childrenIDsInOrder[indexToMove] = idToReplace;
+
+    this._children[idToReplace].index = indexToMove;
+    this._children[idToMove].index = indexToReplace;
   }
 
   /// Get the visual object children by [tablePos]
@@ -328,13 +484,13 @@ class ObjectVis extends VisualObject{
 
   /// Get the visual object children by [index]
   String getElementByIndex(int index) {
-    for(String key in this._children.keys){
-      if(this._children[key].label.index == index){
-        return key;
+    for(ObjectVis child in this._children.values){
+      if(child.label.index == index){
+        return child.id;
       }
     }
-    print("Return with null for ${index}");
-    return "";
+    throw new StateError(
+        "Child with index: ${index} not found in: ${this._children}");
   }
 
   @Deprecated("No usage")
@@ -344,7 +500,7 @@ class ObjectVis extends VisualObject{
     if(isChildOfElement(id)){
       if(getChildByID(id).indexInParent != newIndex){
         String key = this.getElementByIndex(newIndex);
-        this._swapChildrenIndexValues(id, key);
+        this.swapChildrenIndexValues(id, key);
       }
     }else{
       throw new StateError("No child with the given id($id)");
@@ -369,9 +525,30 @@ class ObjectVis extends VisualObject{
     return new List.from(this._children.keys);
   }
 
+  /// Get the map iterable of IDs of the children
+  Iterable<String> get childrenIDsIterable => this._children.keys;
 
 
+  void RemoveElementBasedOnRange(List<List<double>> ranges, List<int> actions){
 
+    RangeMath<double> finalRange;
+    finalRange = new NumberRange<double>.fromNumbers(ranges[0][0], ranges[0][1]);
+
+    for(var i = 1; i < actions.length; i++){
+      switch(actions[i]){
+        case 1:
+
+          break;
+        case 2:
+          break;
+        default:
+          break;
+      }
+    }
+  }
+
+
+  @Deprecated("duplacation")
   String _getNextChildByIndex(int index){
     for(ObjectVis child in this._children.values){
       if(child.label.index == index){
@@ -382,44 +559,110 @@ class ObjectVis extends VisualObject{
         "Child with index: ${index} not found in: ${this._children}");
   }
 
-  /// Get the IDs of the visual object children in order
-  List<String> _getChildrenIDInOrder(){
+  List<String> _getChildrenIDInOrder() {
     List<String> retVal = new List<String>();
 
-    for(var i = 1; i <= this._children.length; i++){
-      retVal.add(_getNextChildByIndex(i));
+    String nextElementID = "";
+    for (var i = 1; i <= this._children.length; i++) {
+      retVal.add(getElementByIndex(i));
     }
-
     return retVal;
   }
 
-  /// This will recursively add the element to the new root from the other one
-  void _addChildrenToElement(VisualObject to, VisualObject from){
-    from.getChildren.forEach((VisualObject element){
-      var elementCopy = new ObjectVis.withParent(element.label.copy(), element.value, to, generateID: false);
-      elementCopy.role = element.role;
-      to.addChild(elementCopy);
-      if(element.getChildrenValues.length > 0){
-        _addChildrenToElement(elementCopy, element);
-      }
-    });
-  }
+  /// Get the IDs of the visual object children in order, only the ones' which values are in the given range
+  /// valueType => 0: data value, 1: number of connections in block
+  Map<String, double> _getChildrenIDInOrderWithValue([List<RangeMath<double>> ranges, int valueType = 0]){
+    Map<String, double> retVal = new Map<String, double>();
 
-  /// This will recursively add the connection to the new element from the other one
-  void _addConnectionToElement(VisualObject newRootElement, VisualObject from){
-    from.getChildren.forEach((VisualObject element){
-      if(element.connection != null){
-        var segmentA = newRootElement.getChildByID(element.connection.segmentOneID, true);
-        var segmentB = newRootElement.getChildByID(element.connection.segmentTwoID, true);
-        newRootElement.getChildByID(element.id, true).connection =
-          new ConnectionVis(segmentA, segmentB, element.connection.nameOfConn).._config =
-              (element.connection as ConnectionVis)._config;
+    String nextElementID = "";
+    if(!(ranges != null && ranges.length > 0)){
+      for (var i = 1; i <= this._children.length; i++) {
+        nextElementID = getElementByIndex(i);
+        if(valueType == 0){
+          retVal[nextElementID] = this._children[nextElementID]._value;
+        }else{
+          if(this._children[nextElementID].role == VisualObjectRole.GROUP){
+            retVal[nextElementID] = 0.0;
+            this._children[nextElementID].childrenIterable.forEach((VisualObject block){
+              retVal[nextElementID] += block.numberOfChildren.toDouble();
+            });
+          }else if(this._children[nextElementID].role == VisualObjectRole.BLOCK){
+            retVal[nextElementID] = 0.0;
+            retVal[nextElementID] += this._children[nextElementID].numberOfChildren.toDouble();
+          }
+        }
+      }
+    }else {
+      for (var i = 1; i <= this._children.length; i++) {
+        nextElementID = getElementByIndex(i);
+        if(this._children[nextElementID].role == VisualObjectRole.GROUP){
+          var validGroup = false;
+          var sumOfBlockInRanges = 0.0;
+          for(var j = 0; j < this._children[nextElementID].numberOfChildren; j++){
 
+            var listOfBlockIDsInGroup = this._children[nextElementID].getChildrenIDs();
+
+            for(var k = 0; k < listOfBlockIDsInGroup.length; k++ ){
+
+              var validBlock = false;
+              var listOfBarsValuesInBlock = this._children[nextElementID]._children[listOfBlockIDsInGroup[k]].getChildrenValues;
+              var sumOfBarsInRanges = 0.0;
+
+              for(var l = 0; l < listOfBarsValuesInBlock.length; l++){
+
+                for (var m = 0; m < ranges.length; m++) {
+                  if (ranges[m].isValueInRange(listOfBarsValuesInBlock[l])) {
+                    validBlock = true;
+                    sumOfBarsInRanges += valueType == 0 ? listOfBarsValuesInBlock[l] : 1;
+                    break;
+                  }
+                }
+              }
+              if(validBlock){
+                validGroup = true;
+                sumOfBlockInRanges += sumOfBarsInRanges;
+              }
+            }
+            if(validGroup){
+              retVal[nextElementID] = sumOfBlockInRanges;
+            }
+          }
+
+        } else if(this._children[nextElementID].role == VisualObjectRole.BLOCK){
+
+
+            var validBlock = false;
+            var listOfBarsValuesInBlock = this._children[nextElementID].getChildrenValues;
+            var sumOfBarsInRanges = 0.0;
+
+            for(var l = 0; l < listOfBarsValuesInBlock.length; l++){
+
+              for (var m = 0; m < ranges.length; m++) {
+                if (ranges[m].isValueInRange(listOfBarsValuesInBlock[l])) {
+                  validBlock = true;
+                  sumOfBarsInRanges += listOfBarsValuesInBlock[l];
+                  break;
+                }
+              }
+            }
+            if(validBlock){
+              retVal[nextElementID] = sumOfBarsInRanges;
+            }
+
+
+        }else{
+          for (var j = 0; j < ranges.length; j++) {
+            if (ranges[j].isValueInRange(this._children[nextElementID].value)) {
+              nextElementID = getElementByIndex(i);
+              retVal[nextElementID] = this._children[nextElementID]._value;
+              break;
+            }
+          }
+        }
       }
-      if(element.getChildrenValues.length > 0){
-        _addConnectionToElement(newRootElement, element);
-      }
-    });
+    }
+
+    return retVal;
   }
 
 
@@ -430,7 +673,7 @@ class ObjectVis extends VisualObject{
          sum += child.getChildren.length.toDouble();
       });
       return sum;
-    }else if(this.role == VisualObjectRole.SEGMENT){
+    }else if(this.role == VisualObjectRole.BLOCK){
       return this._children.length.toDouble();
     }else{
       return 1.0;
@@ -439,60 +682,147 @@ class ObjectVis extends VisualObject{
 
   /// Divides the visual object into multiple pieces based on object children
   /// The new pieces has the same length
-  Map<String, RangeMath<double>> divideRangeBasedOnEqualSubSegments(RangeMath dividingRange,
+  Map<String, RangeMath<double>> divideRangeBasedOnEqualSubSegmentsInside(RangeMath dividingRange,
       {List<dynamic> spaceBetweenParts,
         bool differentSpaces: false,
         dynamic defaultSpaceBetweenParts: 0.1,
-        bool inOrder: false, double shiftValue: 0.0, bool isAscending: true}){
+        bool inOrder: false, double shiftValue: 0.0, bool isAscending: true, List<RangeMath<double>> valueRange}){
 
     var result = new Map<String, RangeMath<double>>();
 
-    var segmentsLength = new List<double>();
+    var numberOfElements = new List<double>();
+    List<String> blocksIDsInOrder;
+    Map<String, double> blocksIDsInOrderWithValues, barsIDsInOrderWithValues;
 
     if(inOrder){
-      var helperMap = new Map<String, double>();
-      int rangeIndex = 0;
-      this._children.forEach((String key, VisualObject child){
-        helperMap[key] = (child as ObjectVis)._getNumbersOfConnections();
-      });
 
-      List<String> childrenIDInOrder = isAscending ? _getChildrenIDInOrder().reversed.toList() : _getChildrenIDInOrder();
+      blocksIDsInOrder = isAscending ? _getChildrenIDInOrder().reversed.toList() : _getChildrenIDInOrder();
+      //blocksIDsInOrder = _getChildrenIDInOrder().reversed.toList();
+      blocksIDsInOrderWithValues = _getChildrenIDInOrderWithValue(valueRange, 1);
 
-      childrenIDInOrder.forEach((String ID){
-        segmentsLength.add(helperMap[ID]);
+      blocksIDsInOrder.forEach((String ID){
+        if(blocksIDsInOrderWithValues.containsKey(ID)) {
+          numberOfElements.add(blocksIDsInOrderWithValues[ID]);
+        }
       });
+      /*blocksIDsInOrderWithValues.forEach((String ID, double value){
+        sizesOfBlocks.add(blocksIDsInOrderWithValues[ID]);
+      });*/
 
     }else {
-      this._children.forEach((String key, VisualObject child) => segmentsLength.add(child.getChildren.length.toDouble()));
+      //TODO add rangeValue here
+      this._children.forEach((String key, VisualObject child) => numberOfElements.add(child.getChildren.length.toDouble()));
     }
 
-    var sumOfValues = segmentsLength.reduce((a,b) => (a+b));
+    //var sumOfValues = segmentsLength.reduce((a,b) => (a+b));
 
     /*if((defaultSpaceBetweenParts as double) > 0.0){
       defaultSpaceBetweenParts -= (sumOfValues / 360.0) * 0.5;
     }*/
 
 
-    var list = dividingRange.dividePartsByValue(segmentsLength,
+    var list = dividingRange.dividePartsByValueInside(numberOfElements,
         spaceBetweenParts: spaceBetweenParts,
         differentSpaces: differentSpaces,
         defaultSpaceBetweenParts: defaultSpaceBetweenParts) as List<RangeMath<double>>;
 
     if(inOrder){
-      List<String> childrenIDInOrder = _getChildrenIDInOrder();
-
       var i = 0;
       var increase = 1;
-      if(isAscending){
+      if(!isAscending){
         i = list.length - 1;
         increase = -1;
       }
 
-      childrenIDInOrder.forEach((String ID){
-        result[ID] = list[i];
-        result[ID].begin += shiftValue;
-        result[ID].end += shiftValue;
-        i += increase;
+      blocksIDsInOrder.forEach((String ID){
+        if(blocksIDsInOrderWithValues.containsKey(ID)){
+          result[ID] = list[i];
+          result[ID].begin += shiftValue;
+          result[ID].end += shiftValue;
+          i += increase;
+        }
+      });
+      /*blocksIDsInOrderWithValues.forEach((String ID, double value){
+          result[ID] = list[i];
+          result[ID].begin += shiftValue;
+          result[ID].end += shiftValue;
+          i += increase;
+      });*/
+    }else {
+      var i = 0;
+      this._children.forEach((String key, VisualObject element) {
+        result[key] = list[i++];
+        result[key].begin += shiftValue;
+        result[key].end += shiftValue;
+      });
+    }
+
+    this._children.forEach((String key, VisualObject child){
+      child.range = result[key];
+    });
+
+    return result;
+
+  }
+
+  /// Divides the visual object into multiple pieces based on object children values
+  Map<String, RangeMath<double>> divideRangeBasedOnChildValueInside(RangeMath dividingRange,
+      {List<dynamic> spaceBetweenParts,
+        bool differentSpaces: false,
+        dynamic defaultSpaceBetweenParts: 0.1,
+        bool inOrder: false, double shiftValue: 0.0, bool isAscending: true, List<RangeMath<double>> valueRange}) {
+
+    var result = new Map<String, RangeMath<double>>();
+
+    List<double> values = new List<double>();
+    var sizesOfBlocks = new List<double>();
+    List<String> blocksIDsInOrder;
+    Map<String, double> blocksIDsInOrderWithValues;
+
+    if(inOrder){
+      blocksIDsInOrder = isAscending ? _getChildrenIDInOrder().reversed.toList() : _getChildrenIDInOrder();
+      blocksIDsInOrderWithValues = _getChildrenIDInOrderWithValue(valueRange, 0);
+
+      blocksIDsInOrder.forEach((String ID){
+        if(blocksIDsInOrderWithValues.containsKey(ID)){
+          values.add(blocksIDsInOrderWithValues[ID]);
+        }
+      });
+    }else {
+      values = this.getChildrenValues;
+    }
+
+    var list = dividingRange.dividePartsByValueInside(values,
+        spaceBetweenParts: spaceBetweenParts,
+        differentSpaces: differentSpaces,
+        defaultSpaceBetweenParts: defaultSpaceBetweenParts) as List<RangeMath<double>>;
+
+
+    if(inOrder){
+      /*var helperMap = new Map<String, RangeMath<double>>();
+      int rangeIndex = 0;
+      this._children.forEach((String key, VisualObject child) => helperMap[key]= list[rangeIndex++]);*/
+
+
+      var i = 0;
+      var increase = 1;
+      if(!isAscending){
+        i = list.length - 1;
+        increase = -1;
+      }
+      /*blocksIDsInOrderWithValues.forEach((String ID, double value){
+          result[ID] = list[i];
+          result[ID].begin += shiftValue;
+          result[ID].end += shiftValue;
+          i += increase;
+      });*/
+      blocksIDsInOrder.forEach((String ID){
+        if(blocksIDsInOrderWithValues.containsKey(ID)){
+          result[ID] = list[i];
+          result[ID].begin += shiftValue;
+          result[ID].end += shiftValue;
+          i += increase;
+        }
       });
     }else {
       var i = 0;
@@ -503,6 +833,94 @@ class ObjectVis extends VisualObject{
       });
     }
 
+    this._children.forEach((String key, VisualObject child){
+      child.range = result[key];
+    });
+
+    return result;
+  }
+
+  /// Divides the visual object into multiple pieces based on object children
+  /// The new pieces has the same length
+  Map<String, RangeMath<double>> divideRangeBasedOnEqualSubSegments(RangeMath dividingRange,
+      {List<dynamic> spaceBetweenParts,
+        bool differentSpaces: false,
+        dynamic defaultSpaceBetweenParts: 0.1,
+        bool inOrder: false, double shiftValue: 0.0, bool isAscending: true, List<RangeMath<double>> valueRange}){
+
+    var result = new Map<String, RangeMath<double>>();
+
+    var numberOfElements = new List<double>();
+    List<String> blocksIDsInOrder;
+    Map<String, double> blocksIDsInOrderWithValues, barsIDsInOrderWithValues;
+
+    if(inOrder){
+
+      blocksIDsInOrder = isAscending ? _getChildrenIDInOrder().reversed.toList() : _getChildrenIDInOrder();
+      //blocksIDsInOrder = _getChildrenIDInOrder().reversed.toList();
+      blocksIDsInOrderWithValues = _getChildrenIDInOrderWithValue(valueRange, 1);
+
+      blocksIDsInOrder.forEach((String ID){
+        if(blocksIDsInOrderWithValues.containsKey(ID)) {
+          numberOfElements.add(blocksIDsInOrderWithValues[ID]);
+        }
+      });
+      /*blocksIDsInOrderWithValues.forEach((String ID, double value){
+        sizesOfBlocks.add(blocksIDsInOrderWithValues[ID]);
+      });*/
+
+    }else {
+      //TODO add rangeValue here
+      this._children.forEach((String key, VisualObject child) => numberOfElements.add(child.getChildren.length.toDouble()));
+    }
+
+    //var sumOfValues = segmentsLength.reduce((a,b) => (a+b));
+
+    /*if((defaultSpaceBetweenParts as double) > 0.0){
+      defaultSpaceBetweenParts -= (sumOfValues / 360.0) * 0.5;
+    }*/
+
+
+    var list = dividingRange.dividePartsByValue(numberOfElements,
+        spaceBetweenParts: spaceBetweenParts,
+        differentSpaces: differentSpaces,
+        defaultSpaceBetweenParts: defaultSpaceBetweenParts) as List<RangeMath<double>>;
+
+    if(inOrder){
+      var i = 0;
+      var increase = 1;
+      if(!isAscending){
+        i = list.length - 1;
+        increase = -1;
+      }
+
+      blocksIDsInOrder.forEach((String ID){
+        if(blocksIDsInOrderWithValues.containsKey(ID)){
+          result[ID] = list[i];
+          result[ID].begin += shiftValue;
+          result[ID].end += shiftValue;
+          i += increase;
+        }
+      });
+      /*blocksIDsInOrderWithValues.forEach((String ID, double value){
+          result[ID] = list[i];
+          result[ID].begin += shiftValue;
+          result[ID].end += shiftValue;
+          i += increase;
+      });*/
+    }else {
+      var i = 0;
+      this._children.forEach((String key, VisualObject element) {
+        result[key] = list[i++];
+        result[key].begin += shiftValue;
+        result[key].end += shiftValue;
+      });
+    }
+
+    this._children.forEach((String key, VisualObject child){
+      child.range = result[key];
+    });
+
     return result;
 
   }
@@ -512,17 +930,23 @@ class ObjectVis extends VisualObject{
       {List<dynamic> spaceBetweenParts,
         bool differentSpaces: false,
         dynamic defaultSpaceBetweenParts: 0.1,
-        bool inOrder: false, double shiftValue: 0.0, bool isAscending: true}) {
+        bool inOrder: false, double shiftValue: 0.0, bool isAscending: true, List<RangeMath<double>> valueRange}) {
 
     var result = new Map<String, RangeMath<double>>();
 
-    List values;
+    List<double> values = new List<double>();
+    var sizesOfBlocks = new List<double>();
+    List<String> blocksIDsInOrder;
+    Map<String, double> blocksIDsInOrderWithValues;
 
     if(inOrder){
-      List<String> childrenIDInOrder = isAscending ? _getChildrenIDInOrder().reversed.toList() : _getChildrenIDInOrder();
-      values = new List<double>();
-      childrenIDInOrder.forEach((String ID){
-        values.add((this._children[ID].value as num).toDouble());
+      blocksIDsInOrder = isAscending ? _getChildrenIDInOrder().reversed.toList() : _getChildrenIDInOrder();
+      blocksIDsInOrderWithValues = _getChildrenIDInOrderWithValue(valueRange, 0);
+
+      blocksIDsInOrder.forEach((String ID){
+        if(blocksIDsInOrderWithValues.containsKey(ID)){
+          values.add(blocksIDsInOrderWithValues[ID]);
+        }
       });
     }else {
       values = this.getChildrenValues;
@@ -539,18 +963,26 @@ class ObjectVis extends VisualObject{
       int rangeIndex = 0;
       this._children.forEach((String key, VisualObject child) => helperMap[key]= list[rangeIndex++]);*/
 
-      List<String> childrenIDInOrder = _getChildrenIDInOrder();
+
       var i = 0;
       var increase = 1;
-      if(isAscending){
+      if(!isAscending){
         i = list.length - 1;
         increase = -1;
       }
-      childrenIDInOrder.forEach((String ID){
-        result[ID] = list[i];
-        result[ID].begin += shiftValue;
-        result[ID].end += shiftValue;
-        i += increase;
+      /*blocksIDsInOrderWithValues.forEach((String ID, double value){
+          result[ID] = list[i];
+          result[ID].begin += shiftValue;
+          result[ID].end += shiftValue;
+          i += increase;
+      });*/
+      blocksIDsInOrder.forEach((String ID){
+        if(blocksIDsInOrderWithValues.containsKey(ID)){
+          result[ID] = list[i];
+          result[ID].begin += shiftValue;
+          result[ID].end += shiftValue;
+          i += increase;
+        }
       });
     }else {
       var i = 0;
@@ -560,6 +992,10 @@ class ObjectVis extends VisualObject{
         result[key].end += shiftValue;
       });
     }
+
+    this._children.forEach((String key, VisualObject child){
+      child.range = result[key];
+    });
 
     return result;
   }
@@ -567,24 +1003,37 @@ class ObjectVis extends VisualObject{
   /// Divides the visual object into multiple pieces based on object children
   /// The new pieces has the same length
   @override
-  Map<String, RangeMath<double>> divideRangeEqualParts(RangeMath dividingRange,
+  Map<String, RangeMath<double>> divideRangeEqualParts(RangeMath<double> dividingRange,
       {List<dynamic> spaceBetweenParts,
         bool differentSpaces: false,
         dynamic defaultSpaceBetweenParts: null,
-        bool inOrder: false, double shiftValue: 0.0, bool isAscending: true}) {
+        bool inOrder: false, double shiftValue: 0.0, bool isAscending: true, List<RangeMath<double>> valueRange}) {
     var result = new Map<String, RangeMath<double>>();
 
-    var list = dividingRange.divideEqualParts(this.getChildrenValues.length,
+    int values;
+    List<String> blocksIDsInOrder;
+    Map<String, double> blocksIDsInOrderWithValues;
+
+    if(inOrder){
+      blocksIDsInOrder = isAscending ? _getChildrenIDInOrder().reversed.toList() : _getChildrenIDInOrder();
+      blocksIDsInOrderWithValues = _getChildrenIDInOrderWithValue(valueRange, 0);
+
+      values = blocksIDsInOrderWithValues.length;
+    }else {
+      values = this.getChildrenValues.length;
+    }
+
+    var list = dividingRange.divideEqualParts(values,
         spaceBetweenParts: spaceBetweenParts,
         differentSpaces: differentSpaces,
         defaultSpaceBetweenParts: defaultSpaceBetweenParts) as List<RangeMath<double>>;
 
     if(inOrder){
-      var helperMap = new Map<String, RangeMath<double>>();
+      /*var helperMap = new Map<String, dynamic>();
       int rangeIndex = 0;
-      this._children.forEach((String key, VisualObject child) => helperMap[key]= list[rangeIndex++]);
+      this._children.forEach((String key, VisualObject child) => helperMap[key]= list[rangeIndex++]);*/
 
-      List<String> childrenIDInOrder = _getChildrenIDInOrder().reversed.toList();
+      //List<String> childrenIDInOrder = _getChildrenIDInOrderWithValue(valueRange).reversed.toList();
       var i = list.length-1;
       var increase = -1;
       if(isAscending){
@@ -592,11 +1041,19 @@ class ObjectVis extends VisualObject{
         increase = 1;
       }
 
-      childrenIDInOrder.forEach((String ID){
+      /*blocksIDsInOrderWithValues.forEach((String ID, double value){
         result[ID] = list[i];
         result[ID].begin += shiftValue;
         result[ID].end += shiftValue;
         i += increase;
+      });*/
+      blocksIDsInOrder.forEach((String ID){
+        if(blocksIDsInOrderWithValues.containsKey(ID)){
+          result[ID] = list[i];
+          result[ID].begin += shiftValue;
+          result[ID].end += shiftValue;
+          i += increase;
+        }
       });
 
     }else {
@@ -607,6 +1064,10 @@ class ObjectVis extends VisualObject{
         result[key].end += shiftValue;
       });
     }
+
+    this._children.forEach((String key, VisualObject child){
+      child.range = result[key];
+    });
 
     return result;
   }
@@ -620,18 +1081,65 @@ class ObjectVis extends VisualObject{
       possibleRootElement = possibleRootElement.parent;
     }
 
-    var newRootElement = new ObjectVis(this.label.copy(), this.value, this.id);
-    newRootElement.role = this.role;
+    var newRootElement = new ObjectVis(this.label.copy(), this.value);
+    ConnectionManager.listOfConnection[newRootElement.id] =
+        new Map<String, ConnectionVis>();
     _addChildrenToElement(newRootElement, possibleRootElement);
     _addConnectionToElement(newRootElement, possibleRootElement);
 
     return newRootElement;
   }
 
+  /// This will recursively add the element to the new root from the other one
+  void _addChildrenToElement(ObjectVis to, ObjectVis from){
+    from._children.forEach((String id, ObjectVis element){
+      var elementCopy = new ObjectVis.withParent(element.label.copy(), element.value, to, generateID: false);
+      elementCopy.role = element.role;
+      if(element.getChildrenValues.length > 0){
+        _addChildrenToElement(elementCopy, element);
+      }
+    });
+  }
+
+  /// This will recursively add the connection to the new element from the other one
+  void _addConnectionToElement(ObjectVis newRootElement, ObjectVis from){
+    if(ConnectionManager.listOfConnection[from.id] == null) return;
+
+    ConnectionManager.listOfConnection[from.id].forEach((String key, VisConnection conn){
+      var segmentA = newRootElement.getChildByID(conn.segmentOneID, true);
+      var segmentB = newRootElement.getChildByID(conn.segmentTwoID, true);
+
+      ConnectionManager.createNewConnection(segmentA, segmentB, newRootElement.id);
+    });
+
+    /*from._children.forEach((String id, ObjectVis element){
+      if(element.connection != null){
+        var segmentA = newRootElement.getChildByID(element.connection.segmentOneID, true);
+        var segmentB = newRootElement.getChildByID(element.connection.segmentTwoID, true);
+        newRootElement.getChildByID(element.id, true).connection =
+        new ConnectionVis(segmentA, segmentB, element.connection.nameOfConn).._config =
+            (element.connection as ConnectionVis)._config;
+
+      }
+      if(element.getChildrenValues.length > 0){
+        _addConnectionToElement(newRootElement, element);
+      }
+    });*/
+  }
+
   /// The string representation of the visual object
   @override
   String toString() {
     return "${this.label} ||\n Value: ${this._value} ||\n child length: ${this._children.length} ||--||\n";
+  }
+
+  int get numberOfChildWithRowLabel{
+    int rowNum = 0;
+    this._children.forEach((String key, VisualObject element){
+      if(element.label.isRow){
+        rowNum++;
+      }
+    });
   }
 
   /// Compare to segments

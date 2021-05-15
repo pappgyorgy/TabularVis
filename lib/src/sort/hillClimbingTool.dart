@@ -2,7 +2,7 @@ part of sortConnection;
 
 class HillClimbingTool implements SortAlgorithm{
 
-  int max_number_step = 100;
+  int max_number_step = 10;
   int number_of_try = 10;
 
   int bestStepAll(State x) {
@@ -12,7 +12,7 @@ class HillClimbingTool implements SortAlgorithm{
     if(x.getValue() == 0){
       return bestIndex;
     }
-    for (int index = 1; index < x.numberOfNeighbours(); index++) {
+    /*for (int index = 1; index < x.numberOfNeighbours(); index++) {
       int difference = x.diffNeighbour(index);
       //x.status;
       if (difference < min) {
@@ -25,25 +25,38 @@ class HillClimbingTool implements SortAlgorithm{
       //if(z.getValue() == 0){
         //break;
       //}
-    }
-    return bestIndex;
+    }*/
+    return x.bestNeighbourIndex;
   }
 
-  State sequenceAll(State x) {
+  State sequenceAll(State currentState) {
     int bestIndex;
     int iterationIndex = 0;
-    int numberOfRandomJump = 5;
+    int numberOfRandomJump = 10;
     int randomJumpIndex = 0;
     do {
-      bestIndex = bestStepAll(x);
+      bestIndex = currentState.bestNeighbourIndex;
+
       if (bestIndex > -1) {
-        (x as DiagramStateFullWithoutCopy).chooseNeighbour(bestIndex, true);
+
+        if(currentState.neighboursValues[currentState.bestNeighbourIndex] < currentState.getValue()){
+          currentState.chooseNeighbour(bestIndex, isPermanent: true, enablePreCalculate: true);
+        }else{
+          currentState.chooseNeighbourIntoTemp(bestIndex, enablePreCalculate: true);
+        }
+
+        if(currentState.getValue() == 0){
+          iterationIndex = max_number_step + 1;
+        }
+        //(x as DiagramStateFullWithoutCopy).chooseNeighbour(bestIndex, true);
         //x.status;
         //print("##${x.order}: ${x.getValue()}##");
       }else{
         //x.status;
-        (x as DiagramStateFullWithoutCopy).chooseRandomState();
+        currentState.chooseRandomState(enablePreCalculation: true, enableHelper: true, setFinalOrder: false);
+        //(x as DiagramStateFullWithoutCopy).chooseRandomState();
         randomJumpIndex++;
+        iterationIndex -= 3;
         //x.status;
 
         /*if(x.getValue() <= bestState.getValue()){
@@ -55,10 +68,13 @@ class HillClimbingTool implements SortAlgorithm{
       //print("${iterationIndex} - ${x.toString()}");
     } while ((-1 > bestIndex || randomJumpIndex < numberOfRandomJump) && (iterationIndex < max_number_step));
 
-    (x as DiagramStateFullWithoutCopy).updateFromFinalOrder();
-    (x as DiagramStateFullWithoutCopy).finalize();
+    currentState.updateFromFinalOrder();
+    //x.finalize();
+    //x.status;
+    //(x as DiagramStateFullWithoutCopy).updateFromFinalOrder();
+    //(x as DiagramStateFullWithoutCopy).finalize();
 
-    return x;
+    return currentState;
   }
 
 

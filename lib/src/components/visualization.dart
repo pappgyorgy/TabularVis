@@ -1,27 +1,42 @@
 import 'dart:html';
 import 'dart:core';
 import 'dart:async';
-import 'package:angular2/core.dart';
+import 'package:angular/core.dart';
+import 'package:angular/angular.dart';
 
-import '../../tabular_vis.dart';
-import 'package:polymer_elements/paper_drawer_panel.dart';
+import 'package:angular_components/angular_components.dart';
+
+import 'package:bezier_simple_connect_viewer/bezier_simple_connect_viewer.dart';
+/*import 'package:polymer_elements/paper_drawer_panel.dart';
 import 'package:polymer_elements/paper_fab.dart';
-import 'package:polymer_elements/paper_icon_button.dart';
+import 'package:polymer_elements/paper_icon_button.dart';*/
 
 import 'interaction_button.dart';
 import 'diagram_settings.dart';
-import 'paper_drawer_narrow_changed_directive.dart';
+import 'component_with_drawer_inside.dart';
+
+import 'package:angular_components/material_button/material_button.dart';
+import 'package:angular_components/material_icon/material_icon.dart';
+import 'package:angular_components/material_input/material_number_accessor.dart';
+
+import 'package:angular_components/app_layout/material_persistent_drawer.dart';
 
 @Component(
     selector: 'vis-area',
     templateUrl: 'template/visualization.html',
-    directives: const <dynamic>[InteractionButton, DiagramSettings, PaperDrawerPanelNarrowChangedDirective],
-    providers: const <dynamic>[InteractionHandler]
+    directives: const <dynamic>[
+      InteractionButton,
+      DiagramSettings,
+      materialDirectives,
+      materialNumberInputDirectives,
+      coreDirectives,
+    ],
+    providers: const <dynamic>[InteractionHandler, materialProviders],
+    styleUrls: const ['template/scss/common.css', 'template/scss/visualization.css', 'package:angular_components/app_layout/layout.scss.css',],
 )
-class VisualizationCanvas implements AfterViewInit{
+class VisualizationCanvas extends ComponentWithDrawerInside implements AfterViewInit{
   DivElement _canvasCont;
   final Application _application;
-  final InteractionHandler _interactionHandler;
   Point<num> previousPoint = new Point(0.0,0.0);
   bool mouseButtonDown = false;
   int mousePosX = 0;
@@ -31,52 +46,32 @@ class VisualizationCanvas implements AfterViewInit{
 
   bool connectionEditEnabled = true;
 
-  @ViewChild(DiagramSettings)
-  DiagramSettings diagramSettings;
+  @ViewChild("visualizationSettings") DiagramSettings diagramSettings;
+  @ViewChild("visualizationMainSidebar") MaterialPersistentDrawerDirective visualizationMainSidebar;
+  @ViewChild("visSettings") MaterialPersistentDrawerDirective visSettingsSidebar;
 
-  PaperDrawerPanel drawer;
-  PaperDrawerPanel drawer2;
+  @Input()
+  bool sidebarVisibility;
+
+  StreamController<int> _requestToReDrawLatestDiagram = new StreamController<int>();
+
+  @Output()
+  Stream<int> get requestToReDrawLatestDiagram => _requestToReDrawLatestDiagram.stream;
+
+  String _selectedButton = "";
 
   int mouseInteractionEffect = 0;
+  bool settingsSidebarVisibility = false;
 
-  bool _resizeRequire = false;
+  bool _lockSettingsSideBar = false;
+  bool _previousSecondSidebarVisibility = false;
+  bool _secondSidebarVisibility = false;
 
-  VisualizationCanvas(this._application, this._interactionHandler){
+  VisualizationCanvas(this._application){
     window.onResize.listen((Event e)=>
         this._application.resizeRenderer(
-            _canvasCont.offsetWidth.toDouble(),
-            _canvasCont.offsetHeight.toDouble()));
-
-    this._interactionHandler.addNewInteraction((dynamic _){
-      //print("Edit diagram");
-      this.drawer.togglePanel();
-    }, "settings", "Edit diagram");
-    this._interactionHandler.addNewInteraction((dynamic _){
-      //print("Resort diagram");
-      this._application.sortSettingsChanged = true;
-      this._application.redrawLatestDiagram();
-    }, "sort", "Resort diagram");
-    this._interactionHandler.addNewInteraction((dynamic _){
-      //print("Refresn diagram");
-      this._application.redrawLatestDiagram();
-    }, "refresh", "Refresn diagram");
-    this._interactionHandler.addNewInteraction((dynamic event){
-      //print("edit connections");
-      this.mouseInteractionEffect = 1 - this.mouseInteractionEffect;
-      var target = event.target as PaperFab;
-      if(target.icon == "open-with"){
-        target.icon = "create";
-      }else{
-        target.icon = "open-with";
-      }
-
-    }, "create", "Edit mode");
-    this._interactionHandler.addNewInteraction((dynamic _){
-      //print("my second button");
-      this._application.visualizationUserInteraction(
-          VisualizationAction.download
-      );
-    }, "file-download", "Download the diagram");
+            _canvasCont.offsetWidth,
+            _canvasCont.offsetHeight));
   }
 
   @override
@@ -87,19 +82,23 @@ class VisualizationCanvas implements AfterViewInit{
       throw new StateError("Canvas conatiner element is not found");
     }
     this._application.resizeRenderer (
-        _canvasCont.offsetWidth.toDouble(),
-        _canvasCont.offsetHeight.toDouble());
+        _canvasCont.offsetWidth,
+        _canvasCont.offsetHeight);
     this._canvasCont.append(this._application.visualizationCanvasElement);
     if(!this._application.canvasMouseClickListen){
-      this._application.visualizationCanvasElement.onClick.listen(mouseClickOnCanvas);
+      //this._application.visualizationCanvasElement.onClick.listen(mouseClickOnCanvas);
       this._application.visualizationCanvasElement.onContextMenu.listen(mouseRightClickOnCanvas);
       this._application.canvasMouseClickListen = true;
     }
-
-    this.drawer = querySelector("#sideDrawer") as PaperDrawerPanel;
-    this.drawer2 = querySelector("#sideSideDrawer") as PaperDrawerPanel;
+    
+    this._requestToReDrawLatestDiagram.add(0);
   }
 
+  @override
+  void ngOnDestroy() {
+    this._requestToReDrawLatestDiagram.close();
+  }
+  
   void clicked(String text){
     print(text);
   }
@@ -110,108 +109,92 @@ class VisualizationCanvas implements AfterViewInit{
     );
   }
 
-  void cancelSidebarIconButtonSelection(){
-    List<PaperIconButton> sidebarSelectorIcons = querySelectorAll(".sidebar-selector-icons") as List<PaperIconButton>;
-    sidebarSelectorIcons.forEach((PaperIconButton iconButton) => iconButton.classes.remove("selected-sidebar-selector-icons"));
+  String get selectedSidebarButtonID => this._selectedButton;
+
+  bool selectedSidebarButton(String id){
+    return _selectedButton == id;
   }
 
-  void openSettings(Event event){
-    cancelSidebarIconButtonSelection();
+  void changeSelectedSidebarButton(String id){
+    this._previouslySelectedSettings = this._selectedButton;
 
-    PaperIconButton iconButton = event.target as PaperIconButton;
-    iconButton.toggleClass("selected-sidebar-selector-icons");
-    switch(iconButton.id){
-      case "basic":
-        if(!isDrawerOpened(this.drawer2) || this._previouslySelectedSettings == "basic") {
-          toggleDrawer(this.drawer2);
-        }
-        this.diagramSettings.showSettingsPage(0);
-        this._previouslySelectedSettings = "basic";
-        break;
-      case "bezier":
-        if(!isDrawerOpened(this.drawer2) || this._previouslySelectedSettings == "bezier") {
-          toggleDrawer(this.drawer2);
-        }
-        this.diagramSettings.showSettingsPage(1);
-        this._previouslySelectedSettings = "bezier";
-        break;
-      case "sorting":
-        if(!isDrawerOpened(this.drawer2) || this._previouslySelectedSettings == "sorting") {
-          toggleDrawer(this.drawer2);
-        }
-        this.diagramSettings.showSettingsPage(2);
-        this._previouslySelectedSettings = "sorting";
-        break;
-      case "style":
-        if(!isDrawerOpened(this.drawer2) || this._previouslySelectedSettings == "style") {
-          toggleDrawer(this.drawer2);
-        }
-        this.diagramSettings.showSettingsPage(3);
-        this._previouslySelectedSettings = "style";
-        break;
-      default:
-
+    if(!_secondSidebarVisibility || this._previouslySelectedSettings == id){
+      this._secondSidebarVisibility = !this._secondSidebarVisibility;
     }
-  }
 
-  bool isDrawerOpened(PaperDrawerPanel drawer){
-    return drawer.getAttribute("narrow") == null;
-  }
+    if(this._previousSecondSidebarVisibility != this._secondSidebarVisibility){
+      resizeCanvas(_secondSidebarVisibility);
+    }
 
-  void toggleDrawer(PaperDrawerPanel drawer){
-    if(drawer.getAttribute("narrow") != null){
-      drawer.setAttribute("responsive-width", "468px");
-    }else{
-      drawer.setAttribute("responsive-width", "999999px");
+    if(!this._secondSidebarVisibility){
       cancelSidebarIconButtonSelection();
+    }else{
+      this._selectedButton = id;
     }
   }
 
-  void lockSidebar(bool lockStatus){
-    this._settingsSidebarStatus = lockStatus;
+  void cancelSidebarIconButtonSelection(){
+    this._previouslySelectedSettings = this._selectedButton = "";
   }
 
-  void resizeCanvas(Event event){
-    DivElement main = ((event.target as PaperDrawerPanel).$["main"] as DivElement);
-    int increaseDirection = (event.target as PaperDrawerPanel).getAttribute("narrow") == null ? -1 : 1;
-    print("${_canvasCont.offsetWidth} - ${((event.target as PaperDrawerPanel).$["main"] as DivElement).offsetWidth}");
-    this._application.resizeRenderer(
-        main.offsetWidth.toDouble() + (300.0 * increaseDirection),
-        _canvasCont.offsetHeight.toDouble());
+  bool isDrawerOpened(){
+    return drawerVisibility;
+  }
+
+  bool isSettingOpened(){
+    return handleSecondSidebarVisibility();
+  }
+
+  bool handleSecondSidebarVisibility(){
+    if(!this.drawerVisibility){
+      _secondSidebarVisibility = false;
+      return false;
+    }
+    return this._secondSidebarVisibility;
+  }
+
+  void lockSidebar(bool lockStatus) => this._lockSettingsSideBar = lockStatus;
+
+  void handleCanvasMouseClick(Event event){
+    if(isSettingOpened()){
+      if(!this._lockSettingsSideBar){
+        this._secondSidebarVisibility = false;
+        cancelSidebarIconButtonSelection();
+        resizeCanvas(this._secondSidebarVisibility);
+      }
+    }else if(isDrawerOpened()){
+
+    }else{
+
+    }
+  }
+
+  void settingsVisibilityChange(bool status){
+    this._previousSecondSidebarVisibility = this._secondSidebarVisibility;
+    this._secondSidebarVisibility = status;
+  }
+
+  void resizeCanvas(bool staus){
+    if(_canvasCont == null) return;
+    var newWidth = _canvasCont.offsetWidth + (staus ? -300 : 300);
+    this._application.resizeRenderer (
+        newWidth,
+        _canvasCont.offsetHeight);
     this._canvasCont
         .querySelector("canvas")
         .style
-        .width = (main.offsetWidth.toDouble() + (300.0 * increaseDirection)).toString();
-    this._resizeRequire = false;
-  }
-
-  void mouseClickOnCanvas(MouseEvent e){
-    if(drawer2.getAttribute("narrow") == null && !this._settingsSidebarStatus){
-      drawer2.setAttribute("responsive-width", "999999px");
-      cancelSidebarIconButtonSelection();
-      return;
-    }
-    //VisConnection connection;
-    /*if(this.mouseInteractionEffect == 0) {
-      try {
-        connection = this._application.handleCanvasMouseClick(
-            e.offset.x as int, e.offset.y as int);
-      } catch (e) {
-        this._application.addNotification(
-            NotificationType.error, "${(e as StateError).message}");
-        return;
-      }
-
-      this.diagramSettings.openSelectedConnectionSetting(connection);
-    }*/
+        .width = newWidth.toString();
   }
 
   void mouseRightClickOnCanvas(MouseEvent e){
     e.preventDefault();
-    if(drawer2.getAttribute("narrow") == null && !this._settingsSidebarStatus){
-      drawer2.setAttribute("responsive-width", "999999px");
-      cancelSidebarIconButtonSelection();
-      return;
+    if(isSettingOpened()){
+      if(!this._lockSettingsSideBar){
+        this._secondSidebarVisibility = false;
+        cancelSidebarIconButtonSelection();
+        resizeCanvas(this._secondSidebarVisibility);
+        return;
+      }
     }
     VisConnection connection;
     if(this.mouseInteractionEffect == 2) {
@@ -223,7 +206,13 @@ class VisualizationCanvas implements AfterViewInit{
             NotificationType.error, "${(e as StateError).message}");
         return;
       }
-
+      this._previousSecondSidebarVisibility = this._secondSidebarVisibility;
+      this._secondSidebarVisibility = true;
+      if(this._previousSecondSidebarVisibility != this._secondSidebarVisibility){
+        resizeCanvas(_secondSidebarVisibility);
+      }
+      this._previouslySelectedSettings = this._selectedButton;
+      this._selectedButton = "style";
       this.diagramSettings.openSelectedConnectionSetting(connection);
     }
   }

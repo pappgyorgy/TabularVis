@@ -1,14 +1,18 @@
 part of renderer;
 
-class GeometryBuilder{
+class ShapeBuilder{
 
   List<List<Vector3>> vertices;
   List<List<Face3>> faceVertIndices;
   List<List<int>> faceNormals;
   List<List<int>> faceMatIndices;
   List<List<Material>> shapeMaterials;
+  List<Vector3> allVertices;
+  List<Vector3> allNormals;
+  List<Vector4> allColors;
 
-  GeometryBuilder(){
+
+  ShapeBuilder(){
     vertices = new List<List<Vector3>>();
     faceVertIndices = new List<List<Face3>>();
     faceMatIndices = new List<List<int>>();
@@ -42,25 +46,7 @@ class GeometryBuilder{
             [0]
         );
       }else {
-        var shape = new Shape(polygon.contourVertices);
-        var shapeHole = new Shape(polygon.polygonVertices.reversed.toList());
-
-        shape.holes.add(shapeHole);
-
-        var shapeGeom = new ShapeGeometry([shape]);
-
-        Color faceVertexColor = new Color(0x000000);
-        List<Color> vertexColors = <Color>[
-          faceVertexColor, faceVertexColor, faceVertexColor];
-        for (var i = 0; i < shapeGeom.faces.length; i++) {
-          (shapeGeom.faces[i] as Face3).vertexColors = vertexColors;
-        }
-
-        this._addNewShape(
-            shapeGeom.vertices,
-            shapeGeom.faces as List<Face3>,
-            [0]
-        );
+        throw new UnimplementedError("Unimplemented because of missing three.dart features");
       }
     }
 
@@ -79,7 +65,13 @@ class GeometryBuilder{
           shape.generateFaceData(),
           (shape as ShapeBezier).getFaceMaterialIndices(materialIndex)
       );
-    }else{
+    }else if(shape is ShapePoincare){
+      this._addNewShape(
+          shape.generatePolygonData(),
+          shape.generateFaceData(),
+          (shape as ShapePoincare).getFaceMaterialIndices(materialIndex)
+      );
+    } else {
       this._addNewShape(
           shape.generatePolygonData(),
           shape.generateFaceData(),
@@ -125,33 +117,121 @@ class GeometryBuilder{
 
   }
 
-  Object3D get mergedGeometry{
-    Geometry retVal = new Geometry();
+  List<Vector3> colors = <Vector3>[new Vector3(1.0, 0.0, 0.0), new Vector3(0.0, 1.0, 0.0)];
+  bool actColor = true;
+
+  void addFace3ExtToGeometryBuilder(GeometryBuilder gb, List<Face3> listOFFaces){
+
+    listOFFaces.forEach((Face3 face){
+      Face3Ext helper = face as Face3Ext;
+      gb.AddFace3(face.a, face.b, face.c);
+      if(helper.vertexNormals != null && helper.vertexNormals.length > 0){
+        this.allNormals[face.a] = helper.vertexNormals[0];
+        this.allNormals[face.b] = helper.vertexNormals[1];
+        this.allNormals[face.c] = helper.vertexNormals[2];
+      }else{
+        this.allNormals[face.a] = new Vector3(0.0, 0.0, 1.0);
+        this.allNormals[face.b] = new Vector3(0.0, 0.0, 1.0);
+        this.allNormals[face.c] = new Vector3(0.0, 0.0, 1.0);
+      }
+
+      if(helper.vertexColors[0] == null || helper.vertexColors[1] == null || helper.vertexColors[2] == null){
+        helper.vertexColors[0] = helper.vertexColors[1] = helper.vertexColors[2] = new Color(0xff0000);
+      }
+      this.allColors[face.a] = helper.vertexColors[0].toVector4;
+      this.allColors[face.b] = helper.vertexColors[1].toVector4;
+      this.allColors[face.c] = helper.vertexColors[2].toVector4;
+
+    });
+
+    for(var i = 0; i  < this.allColors.length; i++){
+      if(allColors[i] == null){
+        print("wrongTriangulation");
+        //throw new StateError("wrongTriangulation");
+      }
+    }
+
+  }
+
+  GeometryBuilder get mergedGeometry{
+
+    this.allNormals = new List<Vector3>();
+    this.allColors = new List<Vector4>();
+    this.allVertices = new List<Vector3>();
+
+    GeometryBuilder gb = new GeometryBuilder();
+    List<Vector3> allVerticesForGeometry;
     //retVal.faces = new List();
     int faceVertexOffset = 0;
     int materialOffset = 0;
+    List<int> indicateUsedVertices;
     for(var i = 0; i < vertices.length; i++){
-      retVal.vertices.addAll(this.vertices[i]);
+      //gb.AddVertices(this.vertices[i]);
+      indicateUsedVertices = new List<int>.generate(this.vertices[i].length, (_)=>0);
+
       int faceMaterialIndex = 0;
 
       for(var k = 0; k < faceVertIndices[i].length; k++){
-        if(faceVertIndices[i][k].a > retVal.vertices.length || faceVertIndices[i][k].b > retVal.vertices.length || faceVertIndices[i][k].c> retVal.vertices.length){
+        if(faceVertIndices[i][k].a > this.vertices[i].length || faceVertIndices[i][k].b > this.vertices[i].length || faceVertIndices[i][k].c> this.vertices[i].length){
           throw new StateError("Errow, index outside of range");
         }
+
+        if(indicateUsedVertices[faceVertIndices[i][k].a] > 0){
+          this.vertices[i].add(this.vertices[i][faceVertIndices[i][k].a]);
+          faceVertIndices[i][k].a = this.vertices[i].length - 1;
+        }else{
+          indicateUsedVertices[faceVertIndices[i][k].a] = 1;
+        }
+
+        if(indicateUsedVertices[faceVertIndices[i][k].b] > 0){
+          this.vertices[i].add(this.vertices[i][faceVertIndices[i][k].b]);
+          faceVertIndices[i][k].b = this.vertices[i].length - 1;
+        }else{
+          indicateUsedVertices[faceVertIndices[i][k].b] = 1;
+        }
+
+        if(indicateUsedVertices[faceVertIndices[i][k].c] > 0){
+          this.vertices[i].add(this.vertices[i][faceVertIndices[i][k].c]);
+          faceVertIndices[i][k].c = this.vertices[i].length - 1;
+        }else{
+          indicateUsedVertices[faceVertIndices[i][k].c] = 1;
+        }
+
         faceVertIndices[i][k].a += faceVertexOffset;
         faceVertIndices[i][k].b += faceVertexOffset;
         faceVertIndices[i][k].c += faceVertexOffset;
-        faceVertIndices[i][k].materialIndex = faceMatIndices[i][faceMaterialIndex++] + materialOffset;
-        if(faceVertIndices[i][k].a > retVal.vertices.length || faceVertIndices[i][k].b > retVal.vertices.length || faceVertIndices[i][k].c> retVal.vertices.length){
+
+        if(faceVertIndices[i][k] is Face3Ext){
+          (faceVertIndices[i][k] as Face3Ext).materialIndex = faceMatIndices[i][faceMaterialIndex++] + materialOffset;
+        }
+        if(faceVertIndices[i][k].a > this.vertices[i].length + faceVertexOffset || faceVertIndices[i][k].b > this.vertices[i].length + faceVertexOffset || faceVertIndices[i][k].c> this.vertices[i].length + faceVertexOffset){
           throw new StateError("Errow, index outside of range");
         }
-        retVal.faces.add(faceVertIndices[i][k]);
       }
-      faceVertexOffset = retVal.vertices.length;
+
+      this.allColors.addAll(new List.generate(this.vertices[i].length, (_)=>new Vector4(0.0, 0.0, 0.0, 0.0)));
+      this.allNormals.addAll(this.vertices[i]);
+      this.allVertices.addAll(this.vertices[i]);
+      addFace3ExtToGeometryBuilder(gb, faceVertIndices[i]);
+      faceVertexOffset = this.allVertices.length;
       //materialOffset += this.shapeMaterials[i].length;
     }
 
-    MeshFaceMaterial materials = new MeshFaceMaterial(<Material>[]);
+    gb.AddVertices(this.allVertices);
+
+    if(!gb.HasAttribute(aNormal)){
+      gb.EnableAttribute(aNormal);
+    }
+
+    gb.AddAttributesVector3(aNormal, this.allNormals);
+
+    if(!gb.HasAttribute(aColorAlpha)){
+      gb.EnableAttribute(aColorAlpha);
+    }
+    gb.AddAttributesVector4(aColorAlpha, this.allColors);
+
+
+   /* MeshFaceMaterial materials = new MeshFaceMaterial(<Material>[]);
     for(var h = 0; h < shapeMaterials.length; h++){
       shapeMaterials[h].forEach((Material mat){
         materials.materials.add(mat);
@@ -222,7 +302,7 @@ class GeometryBuilder{
         opacity: 0.8,
         depthTest: false,
         depthWrite: false
-    );
+    );*/
 
 
     /*var shaderInformation = ShaderLib["phong"];
@@ -235,9 +315,10 @@ class GeometryBuilder{
       fragmentShader: shaderInformation["fragmentShader"]
     );*/
 
-    materials = new MeshFaceMaterial(<Material>[shader, shader2, shader3, shader4, shader5, shader6, shader7]);
+    //materials = new MeshFaceMaterial(<Material>[shader, shader2, shader3, shader4, shader5, shader6, shader7]);
 
-    return new Mesh(retVal, materials);
+    //return new Mesh(retVal, materials);
+    return gb;
   }
 
 }

@@ -372,4 +372,9 @@ class ColorRange implements RangeMath<Color>{
   // TODO: implement toggleDirection
   @override
   int get toggleDirection => null;
+
+  List<RangeMath<Color>> dividePartsByValueInside(List<Color> values,
+      {List<Color> spaceBetweenParts,
+        bool differentSpaces: false,
+        Color defaultSpaceBetweenParts: null}){}
 }

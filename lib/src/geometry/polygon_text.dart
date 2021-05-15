@@ -2,7 +2,7 @@ part of visualizationGeometry;
 
 class PolygonText implements Polygon{
 
-  ShapeGeometry fontGeometry;
+  TextGeometryBuilder fontGeometry;
   List<double> _labelMatrix;
 
   PolygonText(String text, this._labelMatrix, [Color polyColor = null]){
@@ -10,8 +10,8 @@ class PolygonText implements Polygon{
       polyColor = new Color(0x000000);
     }
 
-    var fontshapes = FontUtils.generateShapes(text, 20);
-    fontGeometry = new ShapeGeometry(fontshapes, curveSegments: 20);
+    var fontshapes = generateShapes(text, 20);
+    fontGeometry = new TextGeometryBuilder(fontshapes, 20);
 
     Matrix4 posMat = new Matrix4.fromList(this._labelMatrix);
 
@@ -23,7 +23,7 @@ class PolygonText implements Polygon{
     mat.multiply(posMat);
 
     for(var i = 0; i < fontGeometry.vertices.length; i++){
-      fontGeometry.vertices[i] = fontGeometry.vertices[i].applyMatrix4(mat);
+      fontGeometry.vertices[i].applyMatrix4(mat);
     }
 
     for(var i = 0; i < fontGeometry.faces.length; i++){

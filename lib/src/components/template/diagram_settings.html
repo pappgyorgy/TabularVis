@@ -110,189 +110,259 @@
         left: 80px;
     }
 
+    .tesztel{
+     position: relative;
+    }
+
 </style>
 
-<div id="sidebar_locker">
-    <div class="horizontal layout">
-        <span class="flex text-before-toggle-button">Lock sidebar</span><paper-toggle-button (change)="lockDiagramSettingsSidebar($event)"></paper-toggle-button>
+    <div class="horizontal-layout margin-around">
+        <span class="flex-one">Lock sidebar</span>
+        <material-toggle class="toggles" [disabled]="false" (checkedChange)="lockDiagramSettingsSidebar($event)"></material-toggle>
     </div>
-</div>
-<iron-pages id="settings_selector" class="content iron-pages-selector" selected="{{selectedSettingPage}}">
-    <div id="diagram_settings" class="vertical layout">
-        <!--<div class="settings-paper-card">
-            <div>Connections thickness:</div>
-            <div class="card-content">
-                <paper-radio-group selected="a" (change)="radioButtonChanged($event)">
-                    <paper-radio-button name="a">Different</paper-radio-button>
-                    <paper-radio-button name="b">Unified</paper-radio-button>
-                </paper-radio-group>
-            </div>
-        </div>!-->
-        <div class="settings-paper-card">
-            <div class="card-content">
-                <div class="horizontal layout">
-                    <span class="flex text-before-toggle-button">Unified connection thickness</span><paper-toggle-button (change)="connectionThicknessChanged($event)"></paper-toggle-button>
-                </div>
 
-                <div class="horizontal layout">
-                    <span class="flex text-before-toggle-button">Random segment color</span><paper-toggle-button (change)="changeSegmentColorPool($event)"></paper-toggle-button>
-                </div>
-                <div class="horizontal layout">
-                    <span class="flex text-before-toggle-button">Show ticks</span><paper-toggle-button (change)="showDiagramTicks($event)"></paper-toggle-button>
-                </div>
-                <div class="horizontal layout">
-                    <span class="flex text-before-toggle-button">Use color transition for values</span><paper-toggle-button (change)="enableValueColorRepresentation($event)"></paper-toggle-button>
-                </div>
-                <div class="center horizontal layout">
-                    <paper-button id="minColor" (click)="openBy($event)" style="text-transform: none; width: 100%; margin: 0; padding-left: 0; padding-right: 0">
-                        <div style="margin-right: auto; margin-left: auto">
-                            <iron-icon style="margin-right: 10px" class="button-icon" icon="editor:format-color-fill"></iron-icon><span>smallest</span>
-                        </div>
-                    </paper-button>
-                    <paper-button id="maxColor" (click)="openBy($event)" style="text-transform: none; width: 100%; margin: 0; padding-left: 0; padding-right: 0;">
-                        <div style="margin-right: auto; margin-left: auto">
-                            <iron-icon style="margin-right: 10px" class="button-icon" icon="editor:format-color-fill"></iron-icon><span>largest</span>
-                        </div>
-                    </paper-button>
-                </div>
-                <div class="horizontal layout">
-                    <span class="flex text-before-toggle-button">Use unified for the connections</span><paper-toggle-button (change)="setAllConnectionColor($event)"></paper-toggle-button>
-                </div>
-                <div class="horizontal layout">
-                    <paper-button id="unifiedColor" (click)="openBy($event)" style="text-transform: none; width: 100%; margin: 0; padding-left: 0; padding-right: 0;">
-                        <div style="margin-right: auto; margin-left: auto">
-                            <iron-icon style="margin-right: 10px" class="button-icon" icon="editor:format-color-fill"></iron-icon><span>choose color</span>
-                        </div>
-                    </paper-button>
-                </div>
-                <div>
-                    <div class="text-before-toggle-button">Connections direction</div>
-                    <paper-radio-group selected="{{connectionsDirection}}" (change)="connectionsDirectionChange($event)">
-                        <paper-radio-button name="row">Row</paper-radio-button>
-                        <paper-radio-button name="col">Column</paper-radio-button>
-                        <paper-radio-button name="none">None</paper-radio-button>
-                    </paper-radio-group>
-                </div>
-                <!--<paper-button style="text-transform: none; margin: auto; padding-left: 0; padding-right: 0">
-                    <div style="width: 100%" class="center vertical layout">
-                        <div>smallest</div>
-                        <iron-icon style="margin-left: auto; margin-right: auto" class="button-icon" icon="editor:format-color-fill"></iron-icon>
-                    </div>
-                </paper-button>
-                <paper-button style="text-transform: none; margin: auto; padding-left: 0; padding-right: 0">
-                    <div style="width: 100%" class="center vertical layout">
-                        <div>largest</div>
-                        <iron-icon style="margin-left: auto; margin-right: auto" class="button-icon" icon="editor:format-color-fill"></iron-icon>
-                    </div>
-                </paper-button>!-->
-            </div>
-        </div>
-        <div class="settings-paper-card">
-            <div>Blocks' distance from connections:</div>
-            <paper-slider pin snaps class="bezier-param" min="0" max="150" value="{{spaceConnAndBlocks.value}}" (immediate-value-change)="spaceConnAndBlocks.immValueChange($event)" (change)="spaceConnAndBlocks.valueChange($event)" pin snaps step="1" ></paper-slider>
-            <div>Space between groups:</div>
-            <paper-slider pin snaps class="bezier-param" min="0.0" max="10.0" value="{{blockDistance.value}}" (immediate-value-change)="blockDistance.immValueChange($event)" (change)="blockDistance.valueChange($event)" pin snaps step="0.05" ></paper-slider>
-            <div>Lines' width:</div>
-            <paper-slider pin snaps class="bezier-param" min="0.0" max="1.0" value="{{lineWidth.value}}" (immediate-value-change)="lineWidth.immValueChange($event)" (change)="lineWidth.valueChange($event)" pin snaps step="0.05" ></paper-slider>
-        </div>
-    </div>
-    <div id="bezier_curve" class="vertical layout">
-        <div class="settings-paper-card">
-            <!--<div>Control points:</div>
-            <div class="card-content">
-                <div>2nd and 4th</div>
-                <paper-slider class="bezier-param" editable min="0.0" max="2.0" value="{{crest.valueDouble}}" step="0.05" (immediate-value-change)="crest.immValueChange($event)" (change)="crest.valueChange($event)"></paper-slider>
-                <div>3rd</div>
-                <paper-slider class="bezier-param" editable min="0.0" max="2.0" value="{{bezier_radius.valueDouble}}" step="0.05" (immediate-value-change)="bezier_radius.immValueChange($event)" (change)="bezier_radius.valueChange($event)"></paper-slider>
-                <div>Adjust 3rd</div>
-                <paper-slider class="bezier-param" editable min="-2.0" max="2.0" value="{{bezier_radius_purity.valueDouble}}" step="0.05" (immediate-value-change)="bezier_radius_purity.immValueChange($event)" (change)="bezier_radius_purity.valueChange($event)"></paper-slider>
-            </div>!-->
-            <bezier-curve-settings></bezier-curve-settings>
-        </div>
-    </div>
-    <div id="sorting_settings" class="vertical layout">
-        <div class="settings-paper-card">
-            <div class="card-content">
-                <div>
-                    <paper-toggle-button checked (change)="enableSortConnection($event)">Automatically sorting</paper-toggle-button>
-                </div>
-                <paper-radio-group selected="{{selectedAlgorithm}}" (change)="changeSortAlgorithm($event)" class="vertical layout">
-                    <paper-radio-button name="0">Hill climbing</paper-radio-button>
-                    <paper-radio-button name="1">Min Conflict</paper-radio-button>
-                    <paper-radio-button name="2">Cross entropy</paper-radio-button>
-                    <paper-radio-button name="3">Cross entropy min conflict</paper-radio-button>
-                    <paper-radio-button name="4">Cross entropy mod</paper-radio-button>
-                    <paper-radio-button name="5">Simulated annealing</paper-radio-button>
-                    <paper-radio-button name="6">Bees algorithm</paper-radio-button>
-                </paper-radio-group>
+    <div [ngSwitch]="selectedSettings" class="reducedHeight100">
+        <template ngSwitchCase="basic">
 
-                <!--<div>
-                    <paper-dropdown-menu id="sorting_algorithms" label="Select sorting algorithm">
-                        <paper-listbox class="dropdown-content" [(selected)]="selectedAlgorithm" (iron-select)="changeSortAlgorithm($event)">
-                            <paper-item>Hill climbing</paper-item>
-                            <paper-item>Min Conflict</paper-item>
-                            <paper-item>Cross entropy</paper-item>
-                            <paper-item>Cross entropy min conflict</paper-item>
-                            <paper-item>Cross entropy mod</paper-item>
-                            <paper-item>Simulated annealing</paper-item>
-                            <paper-item>Bees algorithm</paper-item>
-                        </paper-listbox>
-                    </paper-dropdown-menu>
-                </div>!-->
+            <div class="settings-paper-card full-height">
+                <div class="card-content enableOverflow">
+
+                    <div class="horizontal-layout margin-around tesztel">
+                        <span class="flex-one">Poincaré disk model</span>
+                        <material-toggle class="toggles" [disabled]="false" [checked]="poincareDiskModel" (checkedChange)="changeDiagramLineType($event)"></material-toggle>
+                    </div>
+
+                    <div class="horizontal-layout margin-around tesztel">
+                        <span class="flex-one">Unified connection thickness</span>
+                        <material-toggle class="toggles" [disabled]="false" [checked]="unifiedConnectionThickness" (checkedChange)="connectionThicknessChanged($event)"></material-toggle>
+                    </div>
+
+                    <div class="horizontal-layout margin-around tesztel">
+                        <span class="flex-one">Random segment color</span>
+                        <material-toggle class="toggles" [disabled]="false" [checked]="enableSegmentRandomColor" (checkedChange)="changeSegmentColorPool($event)"></material-toggle>
+                    </div>
+
+                    <div class="horizontal-layout margin-around tesztel">
+                        <span class="flex-one">Enable ticks</span>
+                        <material-toggle class="toggles" [disabled]="false" [checked]="showDiagramTicksToggleStatus" (checkedChange)="showDiagramTicks($event)"></material-toggle>
+                    </div>
+
+                    <div class="horizontal-layout margin-around tesztel">
+                        <div class="flex-one vertical-layout centered-layout">
+                            <span [ngClass]="{greyColor: !showDiagramTicksToggleStatus}" >Configure ticks</span>
+                        </div>
+
+                        <material-button (trigger)="showDialog = !showDialog"
+                                         [disabled]="!showDiagramTicksToggleStatus" icon class="ticks-config-button" (click)="changeDialogType('ticks')">
+
+                            <material-icon class="sideBarIcon" icon="settings"></material-icon>
+
+                        </material-button>
+                    </div>
+
+                    <div class="horizontal-layout margin-around tesztel">
+                        <span class="flex-one">Enable scaling</span>
+                        <material-toggle class="toggles" [disabled]="false" [checked]="enableScaling" (checkedChange)="applyScaling($event)"></material-toggle>
+                    </div>
+
+                    <div class="horizontal-layout margin-around tesztel">
+                        <div class="flex-one vertical-layout centered-layout">
+                            <span [ngClass]="{greyColor: !enableScaling}" >Configure scaling</span>
+                        </div>
+
+                        <material-button (trigger)="showDialog = !showDialog"
+                                         [disabled]="!enableScaling" icon class="ticks-config-button" (click)="changeDialogType('scaling')">
+
+                            <material-icon class="sideBarIcon" icon="settings"></material-icon>
+
+                        </material-button>
+                    </div>
+
+                    <div class="horizontal-layout margin-around tesztel">
+                        <span class="flex-one">Use color transition for values</span>
+                        <material-toggle class="toggles" [disabled]="false" [checked]="enableValueColorRepresentationToggleStatus" (checkedChange)="enableValueColorRepresentation($event)"></material-toggle>
+                    </div>
+
+                    <!--<div class="horizontal-layout centered-layout margin-around">
+                        <color-input [color]="minColor" label="smallest" class="full-width" (immediateColorChange)="minColorChange($event)" [disabled]="!enableValueColorRepresentationToggleStatus"></color-input>
+                        <color-input [color]="maxColor" label="largest" class="full-width" (immediateColorChange)="maxColorChange($event)" [disabled]="!enableValueColorRepresentationToggleStatus"></color-input>
+                    </div>!-->
+                    <div class="horizontal-layout centered-layout margin-around">
+                        <color-input [color]="minColor" label="smallest" class="full-width" (immediateColorChange)="minColorChange($event)" ></color-input>
+                        <color-input [color]="maxColor" label="largest" class="full-width" (immediateColorChange)="maxColorChange($event)" ></color-input>
+                    </div>
+
+                    <div class="horizontal-layout margin-around tesztel">
+                        <span class="flex-one">Custom color for connections</span>
+                        <material-toggle class="toggles" [disabled]="false" [checked]="setUnifiedConnectionColorStatus" (checkedChange)="setAllConnectionColor($event)"></material-toggle>
+                    </div>
+
+                    <div class="horizontal-layout centered-layout margin-around tesztel">
+                        <color-input [color]="unifiedColor" label="choose color" class="full-width" (immediateColorChange)="changeUnifiedColor($event)" [disabled]="!setUnifiedConnectionColorStatus"></color-input>
+                    </div>
+
+                    <div class="horizontal-layout margin-around tesztel">
+                        <span class="flex-one">Enable group labeling</span>
+                        <material-toggle class="toggles" [disabled]="false" [checked]="enableGroupLabeling" (checkedChange)="showDiagramGroupLabel($event)"></material-toggle>
+                    </div>
+
+                    <div class="horizontal-layout margin-around tesztel">
+                        <span class="flex-one">Enable edge bundling</span>
+                        <material-toggle class="toggles" [disabled]="false" [checked]="enableEdgeBundling" (checkedChange)="changeConnectionCurveType($event)"></material-toggle>
+                    </div>
+
+                    <div class="horizontal-layout centered-layout margin-around tesztel">
+                        <span class="flex-one">Connections direction</span>
+                    </div>
+                    <div class="horizontal-layout centered-layout tesztel">
+                        <material-radio-group [(ngModel)]="connectionsDirection" class="radioButtonContainer" id="connectionDirSelector" (selectedChange)="connectionsDirectionChange($event)">
+                            <material-radio value="row">Row</material-radio>
+                            <material-radio value="col">Column</material-radio>
+                            <material-radio value="none">None</material-radio>
+                        </material-radio-group>
+                    </div>
+
+                    <div class="vertical-layout margin-around tesztel">
+                        <input-slider label="Blocks' distance from connections" [value]="spaceConnAndBlocks" [minValue]="0.0" [maxValue]="150" [increaseValue]="1" (inputValueChange)="spaceConnAndBlocksChange($event)"></input-slider>
+                        <input-slider label="Space between groups" [value]="blockDistance" [minValue]="0.0" [maxValue]="25" [increaseValue]="0.5" (inputValueChange)="blockDistanceChange($event)"></input-slider>
+                        <input-slider label="Lines' width" [value]="lineWidth" [minValue]="0.0" [maxValue]="1" [increaseValue]="0.01" (inputValueChange)="lineWidthChange($event)"></input-slider>
+                    </div>
+
+                </div>
+            </div>
+
+        </template>
+        <template ngSwitchCase="bezier">
+            <bezier-curve-settings [crest]="crest" [bezier_radius]="bezier_radius" [bezier_radius_purity]="bezier_radius_purity"></bezier-curve-settings>
+        </template>
+        <template ngSwitchCase="sorting">
+            <div class="vertical-layout centered-layout margin-around">
+                <div class="horizontal-layout margin-around">
+                    <span class="flex-one">Automatically sorting</span>
+                    <material-toggle class="toggles" [disabled]="false" [checked]="isSortEnabled" (checkedChange)="enableSortConnection($event)"></material-toggle>
+                </div>
+                <material-radio-group class="vertical-layout radioButtonContainer" [selectionModel]="sortingAlgorithmSelectionModel" #sortAlgorithmSelector>
+                    <material-radio *ngFor="let option of sortingAlgorithmsOptions"
+                                    [disabled]="!isSortEnabled"
+                                    [(checked)]="option.selected"
+                                    [(value)]="option.value">{{option.label}}</material-radio>
+                </material-radio-group>
+            </div>
+        </template>
+        <template ngSwitchCase="style">
+            <div class="horizontal-layout margin-around">
+                <color-input (immediateColorChange)="segOneColChange($event)" [color]="selectedConnection.config.segmentOneColor" [flexLabel]="true" labelPosition="start" [centered]="false" label="{{segmentOneParent.name}}" class="full-width"></color-input>
+            </div>
+            <div class="horizontal-layout margin-around">
+                <color-input (immediateColorChange)="segTwoColChange($event)" [color]="selectedConnection.config.segmentTwoColor" [flexLabel]="true" labelPosition="start" [centered]="false" label="{{segmentTwoParent.name}}" class="full-width"></color-input>
+            </div>
+            <div class="horizontal-layout margin-around">
+                <color-input (immediateColorChange)="connColChange($event)" [color]="selectedConnection.config.connectionColor" [flexLabel]="true" labelPosition="start" [centered]="false" label="Connection" class="full-width"></color-input>
+            </div>
+
+            <div class="vertical-layout margin-around">
+                <input-slider label="Connection's end position in {{segmentOneParent.name}}" [value]="barInSegmentOneSlider" [minValue]="1.0" [maxValue]="barInSegmentOneSliderMax" (inputValueChange)="barInSegmentOneSliderChange($event)"></input-slider>
+                <input-slider label="Connection's end position in {{segmentTwoParent.name}}" [value]="barInSegmentTwoSlider" [minValue]="1.0" [maxValue]="barInSegmentTwoSliderMax" (inputValueChange)="barInSegmentTwoSliderChange($event)"></input-slider>
+                <input-slider label="Position of segment {{segmentOneParent.name}}" [value]="segmentOneSlider" [minValue]="1.0" [maxValue]="segmentOneSliderMax" (inputValueChange)="segmentOneSliderChange($event)"></input-slider>
+                <input-slider label="Position of segment {{segmentTwoParent.name}}" [value]="segmentTwoSlider" [minValue]="1.0" [maxValue]="segmentTwoSliderMax" (inputValueChange)="segmentTwoSliderChange($event)"></input-slider>
+                <input-slider label="Position of group {{segmentOneParent.groupNumber}}" [value]="groupOneSlider" [minValue]="1.0" [maxValue]="groupOneSliderMax" (inputValueChange)="groupOneSliderChange($event)"></input-slider>
+                <input-slider label="Position of group {{segmentTwoParent.groupNumber}}" [value]="groupTwoSlider" [minValue]="1.0" [maxValue]="groupTwoSliderMax" (inputValueChange)="groupTwoSliderChange($event)"></input-slider>
+            </div>
+
+        </template>
+        <template ngSwitchCase="heatmap">
+            <div class="vertical-layout centered-layout margin-around">
+                <div class="horizontal-layout margin-around">
+                    <span class="flex-one">Enable heatmap</span>
+                    <material-toggle class="toggles" [disabled]="false" [checked]="enableHeatmap" (checkedChange)="showHeatmap($event)"></material-toggle>
+                </div>
+                <material-radio-group [disabled]="!enableHeatmap" class="vertical-layout radioButtonContainer" >
+                    <material-radio [disabled]="!enableHeatmap" [value]="0">Connections density in the block</material-radio>
+                    <material-radio [disabled]="!enableHeatmap" [value]="1">Value of connections</material-radio>
+                    <material-radio [disabled]="!enableHeatmap" [value]="2">Number of intersection</material-radio>
+                    <material-radio [disabled]="!enableHeatmap" [value]="3">Value of block</material-radio>
+                    <material-radio [disabled]="!enableHeatmap" [value]="4">Value of connecting block</material-radio>
+                    <material-radio [disabled]="!enableHeatmap" [value]="5">Number of bars in the connecting block</material-radio>
+                </material-radio-group>
+            </div>
+        </template>
+    </div>
+
+<modal [visible]="showDialog">
+    <material-dialog class="max-height-dialog text_white primary-background">
+
+        <h1 header>
+            {{dialogHeader}}
+        </h1>
+
+        <div [ngSwitch]="selectedDialogOption">
+            <template ngSwitchCase="ticks">
+
+                <material-expansionpanel
+                        class="expansion-panel"
+                        *ngFor="let group of listOfVisualObject.getChildren"
+                        [alwaysHideExpandIcon]="true"
+                        name="{{group.label.name}}"
+                        [showSaveCancel]="false" >
+                    <div class="horizontal-layout full-width primary text_white primary-background box-shadow-for-element"
+                         *ngFor="let block of group.getChildren">
+                        <span class="block-name-scaling">{{block.label.name}}</span>
+                        <input-slider inputType="number" [value]="block.tickIncValue" [minValue]="0.0" [increaseValue]="0.1" (inputValueChange)="changeTickValue(block.id, $event, true)"></input-slider>
+                    </div>
+                </material-expansionpanel>
+
+            </template>
+            <template ngSwitchCase="scaling">
+                <material-expansionpanel
+                        class="expansion-panel"
+                        *ngFor="let group of listOfVisualObject.getChildren"
+                        [alwaysHideExpandIcon]="true"
+                        name="{{group.label.name}}"
+                        [showSaveCancel]="false" >
+                    <div action class="action">
+                        <input-slider inputType="percent" [value]="group.scaling * 100" [minValue]="0.0" [increaseValue]="0.01" (inputValueChange)="changeScalingValue(group.id, $event, false)"></input-slider>
+                    </div>
+                    <div class="horizontal-layout full-width primary text_white primary-background box-shadow-for-element"
+                         *ngFor="let block of group.getChildren">
+                        <span class="block-name-scaling">{{block.label.name}}</span>
+                        <input-slider inputType="percent" [value]="block.scaling * 100" [minValue]="0.0" [increaseValue]="0.01" (inputValueChange)="changeScalingValue(block.id, $event, true)"></input-slider>
+                    </div>
+                </material-expansionpanel>
+            </template>
+            <template ngSwitchCase="default">
+                <span>{{information}}</span>
+            </template>
+        </div>
+
+        <div footer>
+            <div [ngSwitch]="selectedDialogOption">
+                <template ngSwitchCase="ticks">
+                    <div class="horizontal-layout positioned-to-right">
+                        <material-button autoFocus (trigger)="showDialog = false" (click)="requestRedraw($event)">Apply</material-button>
+                    </div>
+                </template>
+
+                <template ngSwitchCase="scaling">
+                    <material-button autoFocus (trigger)="showDialog = false" (click)="requestRedraw($event)">Apply</material-button>
+                </template>
+
+                <template ngSwitchCase="default">
+                    <material-button autoFocus (trigger)="showDialog = false">Close</material-button>
+                </template>
             </div>
         </div>
-    </div>
-    <div id="connections_settings" class="vertical layout">
-        <div [ngSwitch]="isSelectedVis" class="settings-paper-card flex">
-            <template ngSwitchCase="connSettings">
-                <div class="vertical layout fit">
-                    <div class="conn-color-button">
-                        <div class="vertical layout">
-                            <paper-button id="segOne" (click)="openBy($event)" style="text-transform: none; width: 100%; margin: 0; padding-left: 0; padding-right: 0;">
-                                <div style="width: 100%;" class="horizontal layout">
-                                    <span class="flex">{{segmentOneParent.name}}</span><iron-icon class="button-icon" icon="editor:format-color-fill"></iron-icon>
-                                </div>
-                            </paper-button>
-                            <paper-button id="segTwo" (click)="openBy($event)" style="text-transform: none; width: 100%; margin: 0; padding-left: 0; padding-right: 0;">
-                                <div style="width: 100%;" class="horizontal layout">
-                                    <span class="flex">{{segmentTwoParent.name}}</span><iron-icon class="button-icon" icon="editor:format-color-fill"></iron-icon>
-                                </div>
-                            </paper-button>
-                            <paper-button id="connectionColor" (click)="openBy($event)" style="text-transform: none; width: 100%; margin: 0; padding-left: 0; padding-right: 0;">
-                                <div style="width: 100%;" class="horizontal layout">
-                                    <span class="flex">Connection</span><iron-icon class="button-icon" icon="editor:format-color-fill"></iron-icon>
-                                </div>
-                            </paper-button>
-                        </div>
-                    </div>
-                    <div class="position-container flex">
-                        <div>Connection's begin position in {{segmentOneParent.name}}:</div>
-                        <paper-slider pin snaps class="bezier-param" min="1" max="{{barInSegmentOneSlider.maxValue}}" max-markers="10" value="{{barInSegmentOneSlider.value}}" (immediate-value-change)="barInSegmentOneSlider.immValueChange($event)" (change)="barInSegmentOneSlider.valueChange($event)" pin snaps step="1" ></paper-slider>
-                        <div>Connection's end position in {{segmentTwoParent.name}}:</div>
-                        <paper-slider pin snaps class="bezier-param" min="1" max="{{barInSegmentTwoSlider.maxValue}}" max-markers="10" value="{{barInSegmentTwoSlider.value}}" (immediate-value-change)="barInSegmentTwoSlider.immValueChange($event)" (change)="barInSegmentTwoSlider.valueChange($event)" pin snaps step="1" ></paper-slider>
-                        <div>Segment {{segmentOneParent.name}} position:</div>
-                        <paper-slider id="segmentOnePosSlider" pin snaps class="bezier-param" min="1" max="{{segmentOneSlider.maxValue}}" max-markers="10" value="{{segmentOneSlider.value}}" (immediate-value-change)="segmentOneSlider.immValueChange($event)" (change)="segmentOneSlider.valueChange($event)" pin snaps step="1" ></paper-slider>
-                        <div>Segment {{segmentTwoParent.name}} position:</div>
-                        <paper-slider id="segmentTwoPosSlider" pin snaps class="bezier-param" min="1" max="{{segmentTwoSlider.maxValue}}" max-markers="10" value="{{segmentTwoSlider.value}}" (immediate-value-change)="segmentTwoSlider.immValueChange($event)" (change)="segmentTwoSlider.valueChange($event)" pin snaps step="1" ></paper-slider>
-                        <div>Group {{segmentOneParent.groupNumber}} position:</div>
-                        <paper-slider pin snaps class="bezier-param" min="1" max="{{groupOneSlider.maxValue}}" max-markers="10" value="{{groupOneSlider.value}}" (immediate-value-change)="groupOneSlider.immValueChange($event)" (change)="groupOneSlider.valueChange($event)" pin snaps step="1" ></paper-slider>
-                        <div>Group {{segmentTwoParent.groupNumber}} position:</div>
-                        <paper-slider pin snaps class="bezier-param" min="1" max="{{groupTwoSlider.maxValue}}" max-markers="10" value="{{groupTwoSlider.value}}" (immediate-value-change)="groupTwoSlider.immValueChange($event)" (change)="groupTwoSlider.valueChange($event)" pin snaps step="1" ></paper-slider>
-                    </div>
-                </div>
-            </template>
-            <template ngSwitchCase="fallBack">
-                <div>Select a connection before you change its settings</div>
-            </template>
-            <template ngSwitchDefault>
-                <div>An error occured, refresh the page</div>
-            </template>
+
+    </material-dialog>
+</modal>
+
+<!--<modal class="no-overlap" [(visible)]="colorPickerContainerVisibility">
+    <material-dialog #colorPickerContainer hideHeader >
+
+        <div footer>
+            <div class="buttons">
+                <material-button (click)="applySelectedColor($event)">Apply</material-button>
+                <material-button (click)="setSelectedColor($event)">Select</material-button>
+            </div>
         </div>
-    </div>
-</iron-pages>
-<paper-dialog id="color_picker_container" no-overlap horizontal-align="left" vertical-align="top" elevation="4">
-    <div class="buttons">
-        <paper-button (click)="applySelectedColor($event)">Apply</paper-button>
-        <paper-button (click)="setSelectedColor($event)">Select</paper-button>
-    </div>
-</paper-dialog>
+    </material-dialog>
+</modal>!-->

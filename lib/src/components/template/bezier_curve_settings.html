@@ -24,7 +24,7 @@
 
 </style>
 
-<div class="card-content">
+<!--<div class="card-content">
     <div>P1</div><div class="smaller">first control point's angular position</div>
     <paper-slider class="bezier-param" editable min="0.0" max="6.28318530718" value="{{curveStart.valueDouble}}" step="0.05" (immediate-value-change)="curveStart.immValueChange($event)" (change)="curveStart.valueChange($event)"></paper-slider>
     <div>P5</div><div class="smaller">last control point's angular position</div>
@@ -35,8 +35,38 @@
     <paper-slider class="bezier-param" editable min="0.0" max="2.0" value="{{bezier_radius.valueDouble}}" step="0.05" (immediate-value-change)="bezier_radius.immValueChange($event)" (change)="bezier_radius.valueChange($event)"></paper-slider>
     <div>P3</div><div class="smaller">distance from M (midpoint of P1 and P5)</div>
     <paper-slider class="bezier-param" editable min="-2.0" max="2.0" value="{{bezier_radius_purity.valueDouble}}" step="0.05" (immediate-value-change)="bezier_radius_purity.immValueChange($event)" (change)="bezier_radius_purity.valueChange($event)"></paper-slider>
+</div>!-->
+
+<div class="vertical-layout margin-around">
+    <div class="vertical-layout input-slider">
+        <div>P1</div>
+        <div class="smaller">first control point's angular position</div>
+        <input-slider label="set value for P1" [value]="curveStart" [minValue]="0.0" [maxValue]="6.28318530718" [increaseValue]="0.05" (inputValueChange)="curveStartChange($event)"></input-slider>
+    </div>
+    <div class="vertical-layout input-slider-container">
+        <div>P5</div>
+        <div class="smaller">last control point's angular position</div>
+        <input-slider label="set value for P5" [value]="curveEnd" [minValue]="0.0" [maxValue]="6.28318530718" [increaseValue]="0.05" (inputValueChange)="curveEndChange($event)"></input-slider>
+    </div>
+    <div class="vertical-layout input-slider-container">
+        <div>P2 and P4</div>
+        <div class="smaller">distance from the end points of the curve</div>
+        <input-slider label="set value for P2 and P4" [value]="crest" [minValue]="0.0" [maxValue]="2.0" [increaseValue]="0.05" (inputValueChange)="crestChange($event)"></input-slider>
+    </div>
+    <div class="vertical-layout input-slider-container">
+        <div>P3</div>
+        <div class="smaller">distance from O (center of the circle)</div>
+        <input-slider label="set value for P3" [value]="bezier_radius" [minValue]="0.0" [maxValue]="2.0" [increaseValue]="0.05" (inputValueChange)="bezier_radiusChange($event)"></input-slider>
+    </div>
+    <div class="vertical-layout input-slider-container">
+        <div>P3</div>
+        <div class="smaller">distance from M (midpoint of P1 and P5)</div>
+        <input-slider label="set value for P3" [value]="bezier_radius_purity" [minValue]="-2.0" [maxValue]="2.0" [increaseValue]="0.05" (inputValueChange)="bezier_radius_purityChange($event)"></input-slider>
+    </div>
 </div>
-<div>
+
+
+<div class="margin-around">
     <div class="flex text-before-toggle-button">Curve preview:</div>
     <canvas id="bezier_canvas" width="280" height="280"></canvas>
 </div>
