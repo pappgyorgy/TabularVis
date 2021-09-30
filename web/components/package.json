@@ -3,6 +3,6 @@
   "version": "0.0.1",
   "description": "JavaScript dependecies for the project",
   "dependencies": {
-    "handsontable": "^0.32.0"
+    "handsontable": "^10.0.0"
   }
 }
